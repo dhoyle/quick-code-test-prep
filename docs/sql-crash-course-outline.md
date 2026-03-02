@@ -1,5 +1,5 @@
-# SQL Crash Course (30-Minute Version)
 
+# SQL Crash Course (30-Minute Version)
 ## Interview-Focused Foundations
 
 ---
@@ -12,29 +12,29 @@ It is not a full SQL course.
 
 It is designed to:
 
-* Refresh core syntax quickly
-* Reinforce high-probability interview patterns
-* Build enough confidence to complete Warmup and Timed Tests
+- Refresh core syntax quickly  
+- Reinforce high-probability interview patterns  
+- Build enough confidence to complete Warmup and Timed Tests  
 
-Estimated total time: ~30 minutes
+Estimated total time: ~30 minutes  
 (If it takes a little longer, that’s fine — the goal is readiness, not speed.)
 
-Structure: 4 short lessons
+Structure: 4 short lessons.
 
 ---
 
-# Lesson Structure Template (Applies to All Lessons)
+## Lesson Structure Template
 
 Each lesson includes:
 
 1. Why This Matters (1–2 sentences)
-2. Core Concept Explanation (short and direct)
+2. Core Concept Explanation
 3. One Guided Example
 4. One Mini Exercise (graded with structured feedback)
 
-No branching.
-No long theory.
-No deep performance optimization.
+No branching.  
+No deep theory.  
+No performance tuning.  
 
 This is about interview readiness.
 
@@ -44,25 +44,23 @@ This is about interview readiness.
 
 ## Why This Matters
 
-Basic filtering shows up constantly in code tests.
-If you can confidently write clean SELECT queries, you won’t freeze on the fundamentals.
-
----
+Basic filtering shows up constantly in code tests.  
+If you can confidently write clean SELECT queries, you won’t freeze on fundamentals.
 
 ## Core Concepts
 
-* SELECT columns
-* FROM table
-* WHERE filtering
-* Basic operators (=, >, <, >=, <=, IN, LIKE)
+- SELECT columns
+- FROM table
+- WHERE filtering
+- Operators: =, >, <, >=, <=, IN, LIKE
 
-Example:
+### Example
 
 ```sql
 SELECT name, age
 FROM users
 WHERE age > 18;
-```
+````
 
 What’s happening:
 
@@ -70,20 +68,7 @@ What’s happening:
 * FROM chooses the table
 * WHERE filters rows
 
----
-
-## Guided Example
-
-Table: `orders`
-
-Columns:
-
-* id
-* customer_id
-* total
-* status
-
-Example:
+### Guided Example
 
 ```sql
 SELECT id, total
@@ -91,21 +76,9 @@ FROM orders
 WHERE status = 'shipped';
 ```
 
-Short explanation:
+### Mini Exercise
 
-* We are retrieving only shipped orders.
-* We are selecting only relevant columns (cleaner than `SELECT *`).
-
----
-
-## Mini Exercise
-
-Prompt:
-
-“Select all columns from the `customers` table where country = 'USA'.”
-
-User writes query.
-System evaluates syntax + filtering logic.
+Select all columns from `customers` where `country = 'USA'`.
 
 ---
 
@@ -113,10 +86,7 @@ System evaluates syntax + filtering logic.
 
 ## Why This Matters
 
-Many interview questions involve counting, summing, or grouping data.
-If you understand GROUP BY, you can solve most aggregation problems.
-
----
+Aggregation questions are extremely common in interview screens.
 
 ## Core Concepts
 
@@ -126,7 +96,7 @@ If you understand GROUP BY, you can solve most aggregation problems.
 * GROUP BY
 * HAVING
 
-Example:
+### Example
 
 ```sql
 SELECT customer_id, COUNT(*) AS order_count
@@ -134,17 +104,7 @@ FROM orders
 GROUP BY customer_id;
 ```
 
-What’s happening:
-
-* Rows are grouped by customer_id.
-* COUNT(*) counts rows within each group.
-* Each group produces one result row.
-
----
-
-## Guided Example
-
-“Find total sales per customer.”
+### Guided Example
 
 ```sql
 SELECT customer_id, SUM(total) AS total_sales
@@ -152,19 +112,9 @@ FROM orders
 GROUP BY customer_id;
 ```
 
----
+### Mini Exercise
 
-## Mini Exercise
-
-“Count how many orders each status has.”
-
-Expected pattern:
-
-```sql
-SELECT status, COUNT(*) 
-FROM orders
-GROUP BY status;
-```
+Count how many orders each `status` has.
 
 ---
 
@@ -172,22 +122,17 @@ GROUP BY status;
 
 ### Why This Matters
 
-Window functions often appear in SQL screens because they solve ranking and “top per group” problems cleanly.
+Window functions often appear in SQL screens for ranking and “top per group” problems.
 
-You don’t need to master them — just recognize and use one common pattern.
-
----
+You don’t need mastery — just recognition and one common pattern.
 
 ### Core Idea
 
-A window function computes values across related rows **without collapsing them** like GROUP BY does.
+Window functions compute values across related rows **without collapsing them** like GROUP BY does.
 
-Most common interview pattern:
-Ranking within a group.
+Most common pattern: ranking within a group.
 
----
-
-### Example: Rank Orders Per Customer
+### Example
 
 ```sql
 SELECT
@@ -195,39 +140,29 @@ SELECT
   order_id,
   total,
   ROW_NUMBER() OVER (
-    PARTITION BY customer_id 
+    PARTITION BY customer_id
     ORDER BY total DESC
   ) AS rn
 FROM orders;
 ```
 
-What’s happening:
-
-* PARTITION BY defines the group.
-* ORDER BY defines ranking order.
-* ROW_NUMBER() assigns 1, 2, 3… within each group.
-
----
+* `PARTITION BY` defines the group
+* `ORDER BY` defines ranking order
+* `ROW_NUMBER()` assigns 1, 2, 3… within each group
 
 ### Micro Exercise
 
-“Return each customer’s highest total order using `ROW_NUMBER()`.”
-
-Hint for user:
-Filter where `rn = 1`.
-
-We are not teaching advanced window patterns in v1.
+Return each customer’s highest total order using `ROW_NUMBER()`.
 
 ---
 
-# Lesson 3: JOINs (Most Important Lesson)
+# Lesson 3: JOINs
 
 ## Why This Matters
 
-JOINs are extremely common in code tests.
-If you can connect two tables confidently, you’re ahead of most candidates.
+JOINs are among the most common SQL interview tasks.
 
----
+If you can join tables confidently, you’re ahead of most candidates.
 
 ## Core Concepts
 
@@ -236,52 +171,51 @@ If you can connect two tables confidently, you’re ahead of most candidates.
 * ON condition
 * Matching primary and foreign keys
 
-Example:
+### Example
 
 ```sql
 SELECT customers.name, orders.total
 FROM customers
 JOIN orders
-ON customers.id = orders.customer_id;
+  ON customers.id = orders.customer_id;
 ```
-
-What’s happening:
-
-* We connect two tables.
-* The ON clause defines how rows match.
-* Only matching rows are returned (INNER JOIN).
 
 ---
 
-## Guided Example
+## Table Aliases (Quick Note)
 
-Tables:
+In interview SQL, you’ll often see table aliases used to shorten table names.
 
-* users(id, name)
-* subscriptions(user_id, plan)
-
-Example:
+### Example
 
 ```sql
-SELECT users.name, subscriptions.plan
-FROM users
-LEFT JOIN subscriptions
-ON users.id = subscriptions.user_id;
+SELECT c.name, o.total
+FROM customers c
+JOIN orders o
+  ON c.id = o.customer_id;
 ```
 
-Short explanation:
+Here:
 
-* LEFT JOIN keeps all users.
-* Users without subscriptions will have NULL plan values.
+* `customers` is aliased as `c`
+* `orders` is aliased as `o`
+
+So:
+
+* `c.name` means `customers.name`
+* `o.total` means `orders.total`
+
+Aliases:
+
+* Make queries shorter
+* Avoid ambiguity
+* Are standard practice in interviews
 
 ---
 
-## Mini Exercise
+### Mini Exercise
 
-“Write a query to show each customer's name and their order total.”
-
-Expected pattern:
-JOIN customers and orders using matching IDs.
+Return each customer’s name and their order total.
 
 ---
 
@@ -289,11 +223,9 @@ JOIN customers and orders using matching IDs.
 
 ## Why This Matters
 
-Subqueries and NULL logic often trip people up under pressure.
+Subqueries and NULL logic commonly cause simple mistakes under pressure.
 
-Understanding them prevents simple mistakes.
-
----
+Understanding them prevents avoidable errors.
 
 ## Core Concepts
 
@@ -302,9 +234,7 @@ Understanding them prevents simple mistakes.
 * IS NULL
 * IS NOT NULL
 
----
-
-## Example: Subquery
+### Subquery Example
 
 ```sql
 SELECT name
@@ -315,14 +245,7 @@ WHERE id IN (
 );
 ```
 
-What’s happening:
-
-* The inner query returns customer IDs.
-* The outer query filters customers to those IDs.
-
----
-
-## NULL Handling Example
+### NULL Handling Example
 
 ```sql
 SELECT *
@@ -332,25 +255,14 @@ WHERE price IS NOT NULL;
 
 Important:
 
-* NULL is not compared using `=`.
-* Use IS NULL / IS NOT NULL.
+* NULL is not compared using `=`
+* Use `IS NULL` / `IS NOT NULL`
 
 ---
 
-## Guided Example
+### Mini Exercise
 
-“Find customers who have not placed orders.”
-
-Pattern:
-LEFT JOIN + WHERE orders.id IS NULL
-or
-NOT IN (subquery)
-
----
-
-## Mini Exercise
-
-“Select products where price IS NOT NULL.”
+Select products where `price IS NOT NULL`.
 
 ---
 
@@ -358,14 +270,11 @@ NOT IN (subquery)
 
 After Lesson 4:
 
-Display:
-
-“You’ve covered the most common SQL topics that show up in code tests.
-
-Now try the Warmup to activate your skills.”
+> “You’ve covered the most common SQL topics that show up in code tests.
+> Now try the Warmup to activate your skills.”
 
 Button:
-→ Start SQL Warmup
+→ Start Warmup
 
 ---
 
@@ -380,7 +289,6 @@ This crash course intentionally does NOT include:
 * Advanced nested queries
 * Database design theory
 
-Goal:
-Fast functional readiness — not mastery.
+Goal: fast functional readiness — not mastery.
 
 
