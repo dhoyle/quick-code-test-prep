@@ -1,4 +1,4 @@
-React/Next/Vercel/Supabase/Stripe is a strategic choice. It’s a steeper ramp than Django, but it gives me **transferable skills** (React/Next/Vercel/Supabase/Stripe) and it’s a very standard startup stack.
+React/Next/Vercel/Supabase/Stripe is a strategic choice. It’s a steeper ramp than Django, but it gives me **transferable skills** (and it’s a very standard startup stack.
 
 Below is a concrete, **12-week ship plan + architecture**, optimized for “new to JS ecosystem, but must launch.”
 
