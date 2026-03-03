@@ -2,273 +2,321 @@ React/Next/Vercel/Supabase/Stripe is a strategic choice. It’s a steeper ramp t
 
 Below is a concrete, **12-week ship plan + architecture**, optimized for “new to JS ecosystem, but must launch.”
 
----
+It reflects:
 
-# Stack Locked
-
-* **Frontend/App:** Next.js (App Router)
-* **Auth/DB:** Supabase (Auth + Postgres)
-* **Deploy:** Vercel
-* **Payments:** Stripe (subscription + 7-day trial)
-* **AI calls:** Server-side (Next.js Route Handlers) with secrets in Vercel env vars
-
-Bluehost: use it later for marketing/WordPress if you want; for the app itself, Vercel is the path of least pain.
+* Modern JS stack (Next.js + Supabase + Vercel + Stripe)
+* Full SQL track
+* Full Python track (parity)
+* Realistic pacing for someone learning the stack
+* Vertical-first execution discipline
+* Not artificially constrained to 12 weeks
 
 ---
 
-# V1 Product Pages
 
-Public (no auth required):
-
-* `/` (home)
-* `/sql` (SQL landing: show crash course lesson titles + warmup/timed descriptions)
-* `/python` (same)
-* `/pricing`
-* `/faq`
-
-Authed:
-
-* `/app` (dashboard)
-* `/app/sql` (start crash course / warmup / timed)
-* `/app/sql/crash-course`
-* `/app/sql/warmup`
-* `/app/sql/timed`
-* `/app/python/...` (later)
-
-Paywall logic:
-
-* Public pages show everything.
-* Clicking **Start** → login/signup → if no active trial/subscription → checkout.
+# Quick Code Test Prep
+## Project Plan (SQL + Python v1)
 
 ---
 
-# Repo Structure
+# Vision
 
-```
-/app
-  /(marketing)
-    page.tsx
-    sql/page.tsx
-    python/page.tsx
-    pricing/page.tsx
-    faq/page.tsx
-  /(auth)
-    login/page.tsx
-    callback/route.ts
-  /(app)
-    app/page.tsx
-    app/sql/page.tsx
-    app/sql/crash-course/page.tsx
-    app/sql/warmup/page.tsx
-    app/sql/timed/page.tsx
+Ship a production-ready web app that helps users prepare quickly (under ~2 hours) for SQL and Python interview code tests.
 
-/lib
-  supabase/
-    client.ts        (browser client)
-    server.ts        (server client)
-    middleware.ts    (session)
-  billing/
-    stripe.ts
-  content/
-    sql-crash-course.ts  (lesson titles + content later)
-  eval/
-    schemas.ts
-    prompts.ts
+Primary transformation:
+Rusty and anxious → prepared and steady.
 
-/app/api
-  /eval/sql-warmup/route.ts
-  /eval/sql-timed/route.ts
-  /stripe/checkout/route.ts
-  /stripe/webhook/route.ts
-```
+v1 includes:
+
+- SQL Crash Course
+- SQL Warmup
+- SQL Timed Test
+- Python Crash Course
+- Python Warmup
+- Python Timed Test
+- 7-day free trial
+- $29/month subscription
 
 ---
 
-# Supabase Data Model (Minimal but Real)
+# Guiding Principles
 
-Tables:
-
-### `profiles`
-
-* `id` uuid (PK, same as auth user id)
-* `email`
-* `created_at`
-
-### `entitlements`
-
-* `user_id` uuid (PK)
-* `status` text (`trialing` | `active` | `inactive`)
-* `current_period_end` timestamp (nullable)
-* `trial_end` timestamp (nullable)
-* `stripe_customer_id` text (nullable)
-* `stripe_subscription_id` text (nullable)
-* `updated_at`
-
-### `attempts`
-
-* `id` uuid (PK)
-* `user_id` uuid
-* `skill` text (`sql` | `python`)
-* `mode` text (`crash_course` | `warmup` | `timed`)
-* `version` text (e.g. `v1`)
-* `started_at`, `submitted_at`
-* `status` text (`in_progress` | `submitted` | `expired`)
-* `score_overall` int (nullable)
-* `summary_json` jsonb (nullable)
-
-### `attempt_answers`
-
-* `id` uuid (PK)
-* `attempt_id` uuid
-* `question_key` text (e.g. `warmup_q1`, `timed_q2`)
-* `answer_text` text
-* `feedback_json` jsonb (nullable)
-* `score` int (nullable)
-* `created_at`
-
-Row Level Security (RLS):
-
-* user can only read/write their own rows.
-
-This is enough for V1.
+1. Build vertically, not horizontally.
+2. Finish SQL completely before starting Python.
+3. Ship something usable before optimizing.
+4. Keep UI simple and clean.
+5. Favor clarity over cleverness.
+6. Avoid premature complexity.
 
 ---
 
-# Paywall + Trial (How it Works)
+# Architecture (Locked)
 
-**Flow**
+Frontend:
+- Next.js (App Router)
+- TypeScript
+- Tailwind CSS
 
-1. User clicks “Start Warmup”
-2. If not logged in → login/signup
-3. If logged in but not entitled → send to Stripe Checkout for $29/mo with 7-day trial
-4. Stripe webhook updates `entitlements` table
-5. App gates `/app/*` actions based on entitlements
+Backend:
+- Next.js Route Handlers
+- Supabase (Auth + Postgres)
 
-**Important**: do not try to “guess” subscription status client-side. Always check entitlements server-side.
+Deployment:
+- Vercel
 
----
+Payments:
+- Stripe subscription with 7-day trial
 
-# Evaluation (LLM) Architecture
-
-You already defined structured JSON for feedback. Implementation pattern:
-
-* Client submits SQL text → `/api/eval/sql-warmup`
-* Server route handler:
-
-  * checks entitlement
-  * calls model
-  * validates JSON against a schema (Zod)
-  * stores feedback_json + score
-  * returns feedback to UI
-
-Key reliability tactic:
-
-* If model output fails schema validation: automatically retry once with “return valid JSON only” instruction.
-
-This is the difference between toy and product.
+Evaluation:
+- LLM calls via server routes
+- Structured JSON validation
+- Retry-on-invalid-output safeguard
 
 ---
 
-# Autosave (Simple V1)
+# Phase 1 — Platform Foundation (Weeks 1–3)
 
-For warmup/timed text input:
+Goal: Deployable, authenticated app skeleton.
 
-* Use `localStorage` autosave every ~2–3 seconds
-* On navigation/submit, persist to DB
+Deliverables:
 
-Timed test timer:
+- Next.js project scaffolded
+- GitHub repo
+- Vercel deployment
+- Supabase project
+- Magic link authentication
+- Protected `/app` route
+- Basic dashboard
+- Public marketing pages (`/`, `/sql`, `/python`, `/pricing`)
+- Environment variables configured
+- Initial database schema:
+  - profiles
+  - entitlements
+  - attempts
+  - attempt_answers
+- Row Level Security policies
+- Entitlement check middleware
 
-* Server stores `started_at`
-* Client computes remaining time = 20m – (now – started_at)
-* If it hits zero → mark attempt expired, show results screen (or submit as-is)
-
-This mimics real timers and survives refresh.
-
----
-
-# Learning Ramp (So You Don’t Stall)
-
-You’ll learn best by building thin vertical slices.
-
-## Week 1 goal: Deployed skeleton
-
-* Create Next.js app
-* Deploy to Vercel
-* Create Supabase project
-* Implement auth
-* Public SQL page + “Start” button → login → dashboard
-
-If you can do that, you’re in business.
-
-## Week 2 goal: SQL Warmup Q1 end-to-end (no AI yet)
-
-* store attempt + answer
-* show on screen
-* basic scoring stub (hardcoded)
-
-## Week 3 goal: AI evaluation working + JSON validation
-
-* now warmup becomes real
-
-Then replicate Q2–Q5.
-
-Only after SQL warmup is solid:
-
-* crash course content pages
-* timed test page
-
-Then Python.
+Exit criteria:
+User can sign up, log in, and access protected pages.
 
 ---
 
-# 12-Week Sprint Plan (Realistic)
+# Phase 2 — SQL Vertical Slice (Weeks 4–8)
 
-### Weeks 1–2: Platform foundation
+## 2A — SQL Warmup (Core Product)
 
-* Next.js + Vercel
-* Supabase auth + RLS
-* Entitlements table + gating middleware
-* Public marketing pages
+Deliverables:
 
-### Weeks 3–5: SQL Warmup
+- Warmup UI (5 questions)
+- Text input with autosave
+- Attempt creation on start
+- Per-question submission
+- Evaluation API route
+- Structured JSON schema validation
+- Feedback panel
+- Summary screen
+- Scores persisted to DB
 
-* Warmup UI + autosave
-* Attempts + answers + feedback storage
-* Evaluation API routes + schema validation
-* Summary screen
-
-### Weeks 6–7: SQL Crash Course
-
-* Content pages + lesson navigation
-* Mini exercises (optional in V1; you can ship lesson text first)
-
-### Weeks 8–9: SQL Timed Test
-
-* Timer + sequential questions
-* End-of-test evaluation + readiness bands
-
-### Weeks 10–11: Stripe
-
-* Checkout + webhook
-* Trial gating
-* Account billing page (minimal)
-
-### Week 12: Beta + launch
-
-* 20–30 testers
-* bug fixes + UX cleanup
-* launch
+Exit criteria:
+SQL Warmup works end-to-end in production.
 
 ---
 
-# Your next action list (do these in order)
+## 2B — SQL Crash Course
 
-1. Install Node + VS Code tooling (if not already)
-2. Create Next.js app (App Router)
-3. Create Supabase project
-4. Implement auth (Supabase SSR pattern)
-5. Deploy to Vercel (first deployment)
-6. Add `/sql` public landing page + lesson title list (static data file)
-7. Add “Start” button that requires auth
+Deliverables:
+
+- Lesson navigation UI
+- Lesson content pages
+- Mini exercises (graded)
+- Completion flow → Warmup CTA
+
+Exit criteria:
+Crash Course → Warmup feels seamless.
+
+---
+
+## 2C — SQL Timed Test
+
+Deliverables:
+
+- 20-minute continuous timer
+- Sequential question flow
+- Server-backed timer logic
+- End-of-test evaluation
+- Readiness bands
+- Attempt expiration handling
+
+Exit criteria:
+Timed test simulates realistic screen.
+
+---
+
+# Phase 3 — Billing & Paywall (Weeks 8–9)
+
+Deliverables:
+
+- Stripe Checkout integration
+- 7-day free trial
+- Webhook endpoint
+- Entitlements table updates
+- Subscription gating for `/app/*`
+- Basic billing page
+
+Exit criteria:
+Trial + subscription gating works in production.
+
+---
+
+# Phase 4 — Python Track (Weeks 9–14)
+
+Replicate SQL structure.
+
+## 4A — Python Crash Course
+
+Topics:
+
+- Lists and loops
+- Dictionaries
+- Functions
+- Basic data transformations
+- JSON handling
+
+Deliverables:
+Same structure as SQL Crash Course.
+
+---
+
+## 4B — Python Warmup
+
+5 progressive drills:
+
+1. Basic list filtering
+2. Dictionary transformation
+3. Loop + condition logic
+4. Function writing
+5. Slightly multi-step transformation
+
+Deliverables:
+Full evaluation pipeline using structured JSON scoring.
+
+---
+
+## 4C — Python Timed Test
+
+Single scenario with 2–3 related tasks.
+
+Concepts tested:
+- Data transformation
+- Aggregation logic
+- Clean function structure
+
+Same timer and evaluation logic as SQL.
+
+Exit criteria:
+Python track reaches parity with SQL.
+
+---
+
+# Phase 5 — Beta & Launch
+
+Deliverables:
+
+- 20–50 beta testers
+- Bug fixes
+- UX polish
+- Landing page refinement
+- Clear messaging
+- Trial conversion tracking
+- Basic analytics (PostHog or Vercel Analytics)
+
+Launch condition:
+- SQL fully stable
+- Python fully functional
+- Stripe tested
+- No critical evaluation bugs
+
+---
+
+# Risks
+
+- Underestimating LLM evaluation edge cases
+- Subscription gating bugs
+- Overbuilding UI
+- Getting stuck in frontend polish
+- Scope creep into advanced topics
+
+Mitigation:
+- Schema validation
+- Keep UI minimal
+- Ship SQL before touching Python
+- No v2 features before launch
+
+---
+
+# Definition of Done (v1)
+
+The product is v1-complete when:
+
+- User can sign up
+- Start free trial
+- Complete SQL crash course
+- Complete SQL warmup
+- Complete SQL timed test
+- Complete Python crash course
+- Complete Python warmup
+- Complete Python timed test
+- Receive structured feedback
+- View past attempts
+- Cancel subscription
+
+---
+
+# Non-Goals (v1)
+
+- Resume upload
+- Job description tailoring
+- Company-specific test packs
+- Advanced analytics
+- Gamification
+- Community features
+- Mobile app
+
+---
+
+# Long-Term Vision (Post v1)
+
+- Resume-aware prep
+- Adaptive difficulty
+- Skill decay reminders
+- Company simulation packs
+- Behavioral interview mode
+- Additional languages
+
+---
+
+# Current Focus
+
+Build SQL fully.
+Then replicate for Python.
+
+No parallel development.
+No premature expansion.
+Ship something real.
+
+
+---
+
+This gives you:
+
+* Clear macro roadmap
+* Clean phase breakdown
+* Explicit exit criteria
+* Risk awareness
+* Scope guardrails
+
+
+
 
 
