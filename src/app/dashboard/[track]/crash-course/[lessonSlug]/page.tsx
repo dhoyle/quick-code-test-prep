@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getLessonByTrackAndSlug } from "@/db/lessons";
+import ReactMarkdown from "react-markdown";
 
 type PageProps = {
   params: Promise<{
@@ -65,11 +66,11 @@ export default async function LessonPage({ params }: PageProps) {
       <p className="mt-2 text-gray-600">
         {lesson.summary ?? "No summary yet."}
       </p>
-
+      
       <section className="mt-8">
-        <pre className="whitespace-pre-wrap rounded border p-4 text-sm">
-          {markdown}
-        </pre>
+        <div className="prose max-w-none">
+            <ReactMarkdown>{markdown}</ReactMarkdown>
+        </div>
       </section>
     </main>
   );
