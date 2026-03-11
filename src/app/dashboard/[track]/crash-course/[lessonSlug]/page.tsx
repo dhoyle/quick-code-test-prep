@@ -2,9 +2,9 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import ReactMarkdown from "react-markdown";
 import { createClient } from "@/lib/supabase/server";
 import { getLessonByTrackAndSlug } from "@/db/lessons";
-import ReactMarkdown from "react-markdown";
 
 type PageProps = {
   params: Promise<{
@@ -66,10 +66,10 @@ export default async function LessonPage({ params }: PageProps) {
       <p className="mt-2 text-gray-600">
         {lesson.summary ?? "No summary yet."}
       </p>
-      
+
       <section className="mt-8">
         <div className="prose max-w-none">
-            <ReactMarkdown>{markdown}</ReactMarkdown>
+          <ReactMarkdown>{markdown}</ReactMarkdown>
         </div>
       </section>
     </main>
