@@ -49,7 +49,7 @@ export async function saveAttempt(input: SaveAttemptInput) {
   const { error } = await supabase.from("attempts").insert({
     user_id: user.id,
     track_id: track.id,
-    mode: "crash-course",
+    mode: "warmup",
     prompt_title: input.promptTitle,
     prompt_text: input.promptText,
     user_answer: trimmedAnswer,

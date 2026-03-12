@@ -36,7 +36,7 @@ export default function WarmupQuestion({ track }: Props) {
         return;
       }
 
-      setMessage("Attempt saved.");
+      setMessage("Attempt submitted");
       setAnswer("");
     });
   }
@@ -60,7 +60,7 @@ export default function WarmupQuestion({ track }: Props) {
           disabled={isPending}
           className="rounded border px-4 py-2"
         >
-          {isPending ? "Saving..." : "Save Attempt"}
+          {isPending ? "Submitting..." : "Submit Attempt"}
         </button>
       </form>
 
