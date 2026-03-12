@@ -5,6 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import { createClient } from "@/lib/supabase/server";
 import { getLessonByTrackAndSlug } from "@/db/lessons";
+import AttemptForm from "@/components/attempts/attempt-form";
 
 type PageProps = {
   params: Promise<{
@@ -72,6 +73,13 @@ export default async function LessonPage({ params }: PageProps) {
           <ReactMarkdown>{markdown}</ReactMarkdown>
         </div>
       </section>
+
+      <AttemptForm
+        trackSlug={track}
+        lessonId={lesson.id}
+        promptTitle={lesson.title}
+        promptText={lesson.summary ?? lesson.title}
+      />
     </main>
   );
 }
