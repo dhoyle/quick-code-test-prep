@@ -28,16 +28,18 @@ export default async function DashboardPage() {
         <ul className="mt-4 space-y-3">
           {tracks.map((track) => (
             <li key={track.id} className="rounded border p-4">
-              <h3 className="font-semibold">{track.title}</h3>
-              <p className="text-sm text-gray-600">
+              <h3 className="text-lg font-semibold">
+                <Link
+                  href={`/dashboard/${track.slug}`}
+                  className="hover:underline"
+                >
+                  {track.title}
+                </Link>
+              </h3>
+
+              <p className="mt-1 text-sm text-gray-600">
                 {track.description ?? "No description yet."}
               </p>
-              <Link
-                href={`/dashboard/${track.slug}`}
-                className="mt-2 inline-block underline"
-              >
-                Open {track.title}
-              </Link>
             </li>
           ))}
         </ul>
