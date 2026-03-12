@@ -76,3 +76,26 @@ export async function getLessonByTrackAndSlug(
 
   return data;
 }
+
+export async function getNextLesson(
+  trackId: string,
+  currentOrder: number
+) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("lessons")
+    .select("slug, title, lesson_order")
+    .eq("track_id", trackId)
+    .eq("is_published", true)
+    .gt("lesson_order", currentOrder)
+    .order("lesson_order")
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to load next lesson: ${error.message}`);
+  }
+
+  return data;
+}

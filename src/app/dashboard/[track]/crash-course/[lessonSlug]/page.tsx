@@ -3,9 +3,12 @@ import path from "node:path";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import ReactMarkdown from "react-markdown";
+
 import { createClient } from "@/lib/supabase/server";
-import { getLessonByTrackAndSlug } from "@/db/lessons";
-import AttemptForm from "@/components/attempts/attempt-form";
+import {
+  getLessonByTrackAndSlug,
+  getNextLesson,
+} from "@/db/lessons";
 
 type PageProps = {
   params: Promise<{
@@ -35,6 +38,7 @@ export default async function LessonPage({ params }: PageProps) {
   const { track, lessonSlug } = await params;
 
   const supabase = await createClient();
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -55,6 +59,11 @@ export default async function LessonPage({ params }: PageProps) {
     notFound();
   }
 
+  const nextLesson = await getNextLesson(
+    lesson.track_id,
+    lesson.lesson_order
+  );
+
   return (
     <main className="p-8">
       <p>
@@ -64,6 +73,7 @@ export default async function LessonPage({ params }: PageProps) {
       </p>
 
       <h1 className="mt-4 text-2xl font-bold">{lesson.title}</h1>
+
       <p className="mt-2 text-gray-600">
         {lesson.summary ?? "No summary yet."}
       </p>
@@ -74,12 +84,34 @@ export default async function LessonPage({ params }: PageProps) {
         </div>
       </section>
 
-      <AttemptForm
-        trackSlug={track}
-        lessonId={lesson.id}
-        promptTitle={lesson.title}
-        promptText={lesson.summary ?? lesson.title}
-      />
+      <section className="mt-10 space-y-3">
+        {nextLesson ? (
+          <Link
+            href={`/dashboard/${track}/crash-course/${nextLesson.slug}`}
+            className="block underline"
+          >
+            Next Lesson → {nextLesson.title}
+          </Link>
+        ) : (
+          <p className="font-semibold">
+            Crash Course Complete
+          </p>
+        )}
+
+        <Link
+          href={`/dashboard/${track}`}
+          className="block underline"
+        >
+          Back to {track.toUpperCase()}
+        </Link>
+
+        <Link
+          href={`/dashboard/${track}/warmup`}
+          className="block underline"
+        >
+          Try Warmup Practice
+        </Link>
+      </section>
     </main>
   );
 }
