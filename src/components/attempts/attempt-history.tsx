@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { clearAttempts } from "@/actions/clear-attempts";
 
 type Attempt = {
   id: string;
@@ -10,13 +12,38 @@ type Attempt = {
 
 type Props = {
   attempts: Attempt[];
+  trackSlug: string;
+  questionSlug: string;
 };
 
-export default function AttemptHistory({ attempts }: Props) {
+export default function AttemptHistory({
+  attempts,
+  trackSlug,
+  questionSlug,
+}: Props) {
   const [open, setOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   if (!attempts.length) {
     return null;
+  }
+
+  function handleClear() {
+    if (!confirm("Clear all attempts for this question?")) {
+      return;
+    }
+
+    startTransition(async () => {
+      const result = await clearAttempts({
+        trackSlug,
+        questionSlug,
+      });
+
+      if (result.ok) {
+        router.refresh();
+      }
+    });
   }
 
   return (
@@ -32,6 +59,14 @@ export default function AttemptHistory({ attempts }: Props) {
 
       {open && (
         <div className="mt-4 space-y-3">
+          <button
+            onClick={handleClear}
+            disabled={isPending}
+            className="text-sm underline text-red-600"
+          >
+            {isPending ? "Clearing..." : "Clear Previous Attempts"}
+          </button>
+
           {attempts.map((attempt) => (
             <div
               key={attempt.id}

@@ -75,7 +75,11 @@ export default async function WarmupQuestionPage({ params }: PageProps) {
         promptText={question.promptText}
       />
 
-      <AttemptHistory attempts={attempts} />
+      <AttemptHistory
+        attempts={attempts}
+        trackSlug={track}
+        questionSlug={questionSlug}
+      />
 
       <section className="mt-10 space-y-3">
         {question.nextQuestionSlug ? (
