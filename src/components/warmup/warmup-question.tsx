@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { saveAttempt } from "@/app/dashboard/[track]/crash-course/[lessonSlug]/actions";
+import { useRouter } from "next/navigation";
+import { saveAttempt } from "@/actions/save-attempt";
 
 type Props = {
   track: string;
@@ -16,6 +17,8 @@ export default function WarmupQuestion({
   promptTitle,
   promptText,
 }: Props) {
+  const router = useRouter();
+
   const [answer, setAnswer] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +47,7 @@ export default function WarmupQuestion({
 
       setMessage("Attempt submitted");
       setAnswer("");
+      router.refresh();
     });
   }
 

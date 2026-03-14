@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 
 type SaveAttemptInput = {
   trackSlug: string;
-  lessonId: string;
+  lessonId?: string;
   promptTitle: string;
   promptText: string;
   userAnswer: string;
