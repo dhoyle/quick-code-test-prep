@@ -1,9 +1,14 @@
+import "./globals.css";
 import type { ReactNode } from "react";
 
 type Props = {
   children: ReactNode;
 };
 
-export default function DashboardLayout({ children }: Props) {
-  return <>{children}</>;
+export default function RootLayout({ children }: Props) {
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
+  );
 }
