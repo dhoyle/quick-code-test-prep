@@ -91,33 +91,27 @@ export default async function LessonPage({ params }: PageProps) {
         </div>
       </section>
 
-      <section className="mt-10 flex justify-between gap-8">
-        <div className="max-w-[45%]">
+      <section className="mt-10 flex justify-between">
+        <div>
           {previousLesson ? (
             <Link
               href={`/dashboard/${track}/crash-course/${previousLesson.slug}`}
-              className="block underline"
+              className="underline"
             >
-              ← Previous Lesson
-              <span className="block text-sm text-gray-600 no-underline">
-                {previousLesson.title}
-              </span>
+              ← Previous Lesson: {previousLesson.title}
             </Link>
           ) : (
             <span className="text-sm text-gray-400">Beginning of Course</span>
           )}
         </div>
 
-        <div className="max-w-[45%] text-right">
+        <div className="text-right">
           {nextLesson ? (
             <Link
               href={`/dashboard/${track}/crash-course/${nextLesson.slug}`}
-              className="block underline"
+              className="underline"
             >
-              Next Lesson →
-              <span className="block text-sm text-gray-600 no-underline">
-                {nextLesson.title}
-              </span>
+              Next Lesson: {nextLesson.title} →
             </Link>
           ) : (
             <span className="font-semibold">Course Complete</span>
