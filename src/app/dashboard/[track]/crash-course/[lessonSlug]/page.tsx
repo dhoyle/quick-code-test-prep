@@ -104,7 +104,7 @@ export default async function LessonPage({ params }: PageProps) {
               </span>
             </Link>
           ) : (
-            <span className="text-sm text-gray-400">First Lesson</span>
+            <span className="text-sm text-gray-400">Beginning of Course</span>
           )}
         </div>
 
