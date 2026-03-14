@@ -27,7 +27,7 @@ export default async function WarmupPage({ params }: PageProps) {
   }
 
   return (
-    <main className="p-8">
+    <div>
       <p>
         <Link href={`/dashboard/${track}`} className="underline">
           Back to {track.toUpperCase()}
@@ -60,6 +60,6 @@ export default async function WarmupPage({ params }: PageProps) {
           </li>
         </ul>
       </section>
-    </main>
+    </div>
   );
 }

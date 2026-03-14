@@ -8,7 +8,7 @@ export default async function TimedPage({ params }: PageProps) {
   const { track } = await params;
 
   return (
-    <main className="p-8">
+    <div>
       <p>
         <Link href={`/dashboard/${track}`} className="underline">
           Back to {track.toUpperCase()}
@@ -22,6 +22,6 @@ export default async function TimedPage({ params }: PageProps) {
       <p className="mt-2 text-gray-600">
         Timed practice mode is coming soon.
       </p>
-    </main>
+    </div>
   );
 }

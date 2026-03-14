@@ -31,7 +31,7 @@ export default async function TrackPage({ params }: PageProps) {
   const lessons = await getLessonsByTrackSlug(track);
 
   return (
-    <main className="p-8">
+    <div>
       <h1 className="text-2xl font-bold">{trackData.title}</h1>
       <p className="mt-2 text-gray-600">
         {trackData.description ?? "No description yet."}
@@ -94,6 +94,6 @@ export default async function TrackPage({ params }: PageProps) {
           Back to Dashboard
         </Link>
       </p>
-    </main>
+    </div>
   );
 }

@@ -74,7 +74,7 @@ export default async function LessonPage({ params }: PageProps) {
   const lessonCount = await getLessonCount(lesson.track_id);
 
   return (
-    <main className="p-8">
+    <div>
       <p>
         <Link href={`/dashboard/${track}`} className="underline">
           Back to {track.toUpperCase()}
@@ -124,6 +124,6 @@ export default async function LessonPage({ params }: PageProps) {
           Try Warmup Practice
         </Link>
       </section>
-    </main>
+    </div>
   );
 }

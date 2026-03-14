@@ -57,7 +57,7 @@ export default async function WarmupQuestionPage({ params }: PageProps) {
   const attempts = await getRecentAttempts(user.id, trackData.id, questionSlug);
 
   return (
-    <main className="p-8">
+    <div>
       <p>
         <Link href={`/dashboard/${track}/warmup`} className="underline">
           Back to Warmup
@@ -100,6 +100,6 @@ export default async function WarmupQuestionPage({ params }: PageProps) {
           Back to Warmup
         </Link>
       </section>
-    </main>
+    </div>
   );
 }
