@@ -116,3 +116,19 @@ export async function getPreviousLesson(trackId: string, lessonOrder: number) {
 
   return data;
 }
+
+export async function getLessonCount(trackId: string) {
+  const supabase = await createClient();
+
+  const { count, error } = await supabase
+    .from("lessons")
+    .select("*", { count: "exact", head: true })
+    .eq("track_id", trackId)
+    .eq("is_published", true);
+
+  if (error) {
+    throw new Error(`Failed to count lessons: ${error.message}`);
+  }
+
+  return count ?? 0;
+}

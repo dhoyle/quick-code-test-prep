@@ -7,6 +7,7 @@ import ReactMarkdown from "react-markdown";
 import { createClient } from "@/lib/supabase/server";
 import {
   getLessonByTrackAndSlug,
+  getLessonCount,
   getNextLesson,
   getPreviousLesson,
 } from "@/db/lessons";
@@ -70,6 +71,8 @@ export default async function LessonPage({ params }: PageProps) {
     lesson.lesson_order
   );
 
+  const lessonCount = await getLessonCount(lesson.track_id);
+
   return (
     <main className="p-8">
       <p>
@@ -78,10 +81,8 @@ export default async function LessonPage({ params }: PageProps) {
         </Link>
       </p>
 
-      <h1 className="mt-4 text-2xl font-bold">{lesson.title}</h1>
-
-      <p className="mt-2 text-gray-600">
-        {lesson.summary ?? "No summary yet."}
+      <p className="mt-4 text-sm text-gray-500">
+        Lesson {lesson.lesson_order} of {lessonCount}
       </p>
 
       <section className="mt-8">
@@ -90,37 +91,42 @@ export default async function LessonPage({ params }: PageProps) {
         </div>
       </section>
 
-      <section className="mt-10 flex justify-between">
-        <div>
-          {previousLesson && (
+      <section className="mt-10 flex justify-between gap-8">
+        <div className="max-w-[45%]">
+          {previousLesson ? (
             <Link
               href={`/dashboard/${track}/crash-course/${previousLesson.slug}`}
-              className="underline"
+              className="block underline"
             >
               ← Previous Lesson
+              <span className="block text-sm text-gray-600 no-underline">
+                {previousLesson.title}
+              </span>
             </Link>
+          ) : (
+            <span className="text-sm text-gray-400">First Lesson</span>
           )}
         </div>
 
-        <div>
+        <div className="max-w-[45%] text-right">
           {nextLesson ? (
             <Link
               href={`/dashboard/${track}/crash-course/${nextLesson.slug}`}
-              className="underline"
+              className="block underline"
             >
               Next Lesson →
+              <span className="block text-sm text-gray-600 no-underline">
+                {nextLesson.title}
+              </span>
             </Link>
           ) : (
-            <span className="font-semibold">Crash Course Complete</span>
+            <span className="font-semibold">Course Complete</span>
           )}
         </div>
       </section>
 
       <section className="mt-6">
-        <Link
-          href={`/dashboard/${track}/warmup`}
-          className="underline"
-        >
+        <Link href={`/dashboard/${track}/warmup`} className="underline">
           Try Warmup Practice
         </Link>
       </section>
