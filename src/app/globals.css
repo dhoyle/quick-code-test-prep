@@ -26,3 +26,20 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Markdown code blocks */
+
+.prose pre {
+  background-color: #f5f5f5;
+  color: #111;
+  border: 1px solid #e5e5e5;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+}
+
+.prose pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+}
