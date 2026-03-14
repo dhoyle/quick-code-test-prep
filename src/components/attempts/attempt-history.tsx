@@ -23,6 +23,7 @@ export default function AttemptHistory({
 }: Props) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   if (!attempts.length) {
@@ -34,24 +35,26 @@ export default function AttemptHistory({
       return;
     }
 
+    setError(null);
+
     startTransition(async () => {
       const result = await clearAttempts({
         trackSlug,
         questionSlug,
       });
 
-      if (result.ok) {
-        router.refresh();
+      if (!result.ok) {
+        setError(result.error ?? "Failed to clear attempts.");
+        return;
       }
+
+      router.refresh();
     });
   }
 
   return (
     <section className="mt-6">
-      <button
-        onClick={() => setOpen(!open)}
-        className="underline"
-      >
+      <button onClick={() => setOpen(!open)} className="underline">
         {open
           ? "Hide Previous Attempts"
           : `View Previous Attempts (${attempts.length})`}
@@ -62,17 +65,16 @@ export default function AttemptHistory({
           <button
             onClick={handleClear}
             disabled={isPending}
-            className="text-sm underline text-red-600"
+            className="text-sm text-red-600 underline"
           >
             {isPending ? "Clearing..." : "Clear Previous Attempts"}
           </button>
 
+          {error && <p className="text-sm text-red-600">{error}</p>}
+
           {attempts.map((attempt) => (
-            <div
-              key={attempt.id}
-              className="rounded border p-3 text-sm"
-            >
-              <div className="text-xs text-gray-500 mb-1">
+            <div key={attempt.id} className="rounded border p-3 text-sm">
+              <div className="mb-1 text-xs text-gray-500">
                 {new Date(attempt.created_at).toLocaleString()}
               </div>
 
