@@ -5,7 +5,11 @@ import { notFound, redirect } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 
 import { createClient } from "@/lib/supabase/server";
-import { getLessonByTrackAndSlug, getNextLesson } from "@/db/lessons";
+import {
+  getLessonByTrackAndSlug,
+  getNextLesson,
+  getPreviousLesson,
+} from "@/db/lessons";
 
 type PageProps = {
   params: Promise<{
@@ -56,7 +60,15 @@ export default async function LessonPage({ params }: PageProps) {
     notFound();
   }
 
-  const nextLesson = await getNextLesson(lesson.track_id, lesson.lesson_order);
+  const previousLesson = await getPreviousLesson(
+    lesson.track_id,
+    lesson.lesson_order
+  );
+
+  const nextLesson = await getNextLesson(
+    lesson.track_id,
+    lesson.lesson_order
+  );
 
   return (
     <main className="p-8">
@@ -78,21 +90,36 @@ export default async function LessonPage({ params }: PageProps) {
         </div>
       </section>
 
-      <section className="mt-10 space-y-3">
-        {nextLesson ? (
-          <Link
-            href={`/dashboard/${track}/crash-course/${nextLesson.slug}`}
-            className="block underline"
-          >
-            Next Lesson → {nextLesson.title}
-          </Link>
-        ) : (
-          <p className="font-semibold">Crash Course Complete</p>
-        )}
+      <section className="mt-10 flex justify-between">
+        <div>
+          {previousLesson && (
+            <Link
+              href={`/dashboard/${track}/crash-course/${previousLesson.slug}`}
+              className="underline"
+            >
+              ← Previous Lesson
+            </Link>
+          )}
+        </div>
 
+        <div>
+          {nextLesson ? (
+            <Link
+              href={`/dashboard/${track}/crash-course/${nextLesson.slug}`}
+              className="underline"
+            >
+              Next Lesson →
+            </Link>
+          ) : (
+            <span className="font-semibold">Crash Course Complete</span>
+          )}
+        </div>
+      </section>
+
+      <section className="mt-6">
         <Link
           href={`/dashboard/${track}/warmup`}
-          className="block underline"
+          className="underline"
         >
           Try Warmup Practice
         </Link>

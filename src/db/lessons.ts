@@ -99,3 +99,20 @@ export async function getNextLesson(
 
   return data;
 }
+
+export async function getPreviousLesson(trackId: string, lessonOrder: number) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("lessons")
+    .select("*")
+    .eq("track_id", trackId)
+    .lt("lesson_order", lessonOrder)
+    .order("lesson_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+
+  return data;
+}
