@@ -38,21 +38,21 @@ export default async function TrackPage({ params }: PageProps) {
       </p>
 
       <section className="mt-8">
-        <h2 className="text-xl font-semibold">Crash course</h2>
+        <h2 className="text-xl font-semibold">Crash Course</h2>
+
         <ul className="mt-4 space-y-3">
           {lessons.map((lesson) => (
-            <li key={lesson.id} className="rounded border p-4">
-              <h3 className="font-semibold">
-                {lesson.lesson_order}. {lesson.title}
-              </h3>
-              <p className="text-sm text-gray-600">
-                {lesson.summary ?? "No summary yet."}
-              </p>
+            <li key={lesson.id}>
               <Link
                 href={`/dashboard/${track}/crash-course/${lesson.slug}`}
-                className="mt-2 inline-block underline"
+                className="block rounded border p-4 hover:bg-gray-50"
               >
-                Open lesson
+                <h3 className="text-lg font-semibold">
+                  {lesson.lesson_order}. {lesson.title}
+                </h3>
+                <p className="mt-1 text-sm text-gray-600">
+                  {lesson.summary ?? "No summary yet."}
+                </p>
               </Link>
             </li>
           ))}
@@ -60,16 +60,38 @@ export default async function TrackPage({ params }: PageProps) {
       </section>
 
       <section className="mt-10">
-        <h2 className="text-xl font-semibold">Practice modes</h2>
-        <ul className="mt-4 space-y-2">
-          <li>Warmup mode — coming soon</li>
-          <li>Timed mode — coming soon</li>
+        <h2 className="text-xl font-semibold">Practice Tests</h2>
+
+        <ul className="mt-4 space-y-3">
+          <li>
+            <Link
+              href={`/dashboard/${track}/warmup`}
+              className="block rounded border p-4 hover:bg-gray-50"
+            >
+              <h3 className="text-lg font-semibold">Warmup Test</h3>
+              <p className="mt-1 text-sm text-gray-600">
+                Untimed practice to build confidence before a real code test.
+              </p>
+            </Link>
+          </li>
+
+          <li>
+            <Link
+              href={`/dashboard/${track}/timed`}
+              className="block rounded border p-4 hover:bg-gray-50"
+            >
+              <h3 className="text-lg font-semibold">Timed Test</h3>
+              <p className="mt-1 text-sm text-gray-600">
+                Timed practice to simulate a real coding assessment.
+              </p>
+            </Link>
+          </li>
         </ul>
       </section>
 
       <p className="mt-8">
         <Link href="/dashboard" className="underline">
-          Back to dashboard
+          Back to Dashboard
         </Link>
       </p>
     </main>

@@ -5,10 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 
 import { createClient } from "@/lib/supabase/server";
-import {
-  getLessonByTrackAndSlug,
-  getNextLesson,
-} from "@/db/lessons";
+import { getLessonByTrackAndSlug, getNextLesson } from "@/db/lessons";
 
 type PageProps = {
   params: Promise<{
@@ -59,10 +56,7 @@ export default async function LessonPage({ params }: PageProps) {
     notFound();
   }
 
-  const nextLesson = await getNextLesson(
-    lesson.track_id,
-    lesson.lesson_order
-  );
+  const nextLesson = await getNextLesson(lesson.track_id, lesson.lesson_order);
 
   return (
     <main className="p-8">
@@ -93,17 +87,8 @@ export default async function LessonPage({ params }: PageProps) {
             Next Lesson → {nextLesson.title}
           </Link>
         ) : (
-          <p className="font-semibold">
-            Crash Course Complete
-          </p>
+          <p className="font-semibold">Crash Course Complete</p>
         )}
-
-        <Link
-          href={`/dashboard/${track}`}
-          className="block underline"
-        >
-          Back to {track.toUpperCase()}
-        </Link>
 
         <Link
           href={`/dashboard/${track}/warmup`}

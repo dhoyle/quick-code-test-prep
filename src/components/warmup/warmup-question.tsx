@@ -5,18 +5,21 @@ import { saveAttempt } from "@/app/dashboard/[track]/crash-course/[lessonSlug]/a
 
 type Props = {
   track: string;
+  questionSlug: string;
+  promptTitle: string;
+  promptText: string;
 };
 
-export default function WarmupQuestion({ track }: Props) {
+export default function WarmupQuestion({
+  track,
+  questionSlug,
+  promptTitle,
+  promptText,
+}: Props) {
   const [answer, setAnswer] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-
-  const questionSlug = "basic-select";
-  const promptTitle = "Basic SELECT";
-  const promptText =
-    "Write a SQL query that returns the name and age columns from the users table.";
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -26,7 +29,7 @@ export default function WarmupQuestion({ track }: Props) {
     startTransition(async () => {
       const result = await saveAttempt({
         trackSlug: track,
-        lessonId: "warmup-basic-select",
+        lessonId: `warmup-${questionSlug}`,
         promptTitle,
         promptText,
         userAnswer: answer,
@@ -46,11 +49,7 @@ export default function WarmupQuestion({ track }: Props) {
 
   return (
     <section className="mt-8 rounded border p-4">
-      <h2 className="text-xl font-semibold">{promptTitle}</h2>
-
-      <p className="mt-2 text-gray-700">{promptText}</p>
-
-      <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <textarea
           className="min-h-[160px] w-full rounded border p-3 font-mono text-sm"
           value={answer}
