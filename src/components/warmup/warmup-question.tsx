@@ -13,6 +13,7 @@ export default function WarmupQuestion({ track }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  const questionSlug = "basic-select";
   const promptTitle = "Basic SELECT";
   const promptText =
     "Write a SQL query that returns the name and age columns from the users table.";
@@ -29,6 +30,8 @@ export default function WarmupQuestion({ track }: Props) {
         promptTitle,
         promptText,
         userAnswer: answer,
+        mode: "warmup",
+        questionSlug,
       });
 
       if (!result.ok) {

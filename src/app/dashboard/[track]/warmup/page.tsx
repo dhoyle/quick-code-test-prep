@@ -28,7 +28,8 @@ export default async function WarmupPage({ params }: PageProps) {
     redirect("/dashboard");
   }
 
-  const attempts = await getRecentAttempts(user.id, trackData.id);
+  const questionSlug = "basic-select";
+  const attempts = await getRecentAttempts(user.id, trackData.id, questionSlug);
 
   return (
     <main className="p-8">

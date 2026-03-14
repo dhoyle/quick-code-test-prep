@@ -8,6 +8,8 @@ type SaveAttemptInput = {
   promptTitle: string;
   promptText: string;
   userAnswer: string;
+  mode: string;
+  questionSlug: string;
 };
 
 export async function saveAttempt(input: SaveAttemptInput) {
@@ -29,7 +31,7 @@ export async function saveAttempt(input: SaveAttemptInput) {
   if (!trimmedAnswer) {
     return {
       ok: false,
-      error: "Please enter an answer before saving.",
+      error: "Please enter an answer before submitting.",
     };
   }
 
@@ -49,7 +51,8 @@ export async function saveAttempt(input: SaveAttemptInput) {
   const { error } = await supabase.from("attempts").insert({
     user_id: user.id,
     track_id: track.id,
-    mode: "warmup",
+    mode: input.mode,
+    question_slug: input.questionSlug,
     prompt_title: input.promptTitle,
     prompt_text: input.promptText,
     user_answer: trimmedAnswer,
