@@ -110,9 +110,10 @@ export default function TrackSidebarClient({
           <p className="px-2 text-sm font-semibold text-gray-500">Practice Tests</p>
 
           <div className="mt-2">
-            <p className="px-2 mt-2 text-sm font-semibold text-gray-500">
-              Warmup Test
-            </p>
+            <Link
+              href={warmupMainHref}
+              className={topLinkClasses(pathname === warmupMainHref)}
+            >
               Warmup Test
             </Link>
 
