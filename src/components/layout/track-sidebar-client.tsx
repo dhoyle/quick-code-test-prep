@@ -33,10 +33,8 @@ type Props = {
   otherTracks: Track[];
 };
 
-function itemClasses(isActive: boolean, nested = false) {
-  const base = nested
-    ? "block rounded px-2 py-1 text-sm"
-    : "block rounded px-2 py-1 text-sm";
+function itemClasses(isActive: boolean) {
+  const base = "block rounded px-2 py-1 text-sm";
 
   return isActive
     ? `${base} border-l-2 border-black bg-gray-100 font-semibold text-black`
@@ -59,7 +57,6 @@ export default function TrackSidebarClient({
   const pathname = usePathname();
 
   const trackHref = `/dashboard/${track}`;
-  const warmupMainHref = `/dashboard/${track}/warmup`;
   const timedHref = `/dashboard/${track}/timed`;
 
   return (
@@ -97,7 +94,7 @@ export default function TrackSidebarClient({
 
               return (
                 <li key={lesson.id}>
-                  <Link href={href} className={itemClasses(isActive, true)}>
+                  <Link href={href} className={itemClasses(isActive)}>
                     {lesson.lesson_order}. {lesson.title}
                   </Link>
                 </li>
@@ -110,12 +107,9 @@ export default function TrackSidebarClient({
           <p className="px-2 text-sm font-semibold text-gray-500">Practice Tests</p>
 
           <div className="mt-2">
-            <Link
-              href={warmupMainHref}
-              className={topLinkClasses(pathname === warmupMainHref)}
-            >
+            <p className="px-2 text-sm font-semibold text-gray-500">
               Warmup Test
-            </Link>
+            </p>
 
             {warmupQuestions.length > 0 && (
               <ul className="mt-2 ml-4 space-y-1">
@@ -125,7 +119,7 @@ export default function TrackSidebarClient({
 
                   return (
                     <li key={question.slug}>
-                      <Link href={href} className={itemClasses(isActive, true)}>
+                      <Link href={href} className={itemClasses(isActive)}>
                         {index + 1}. {question.title}
                       </Link>
                     </li>
@@ -135,16 +129,14 @@ export default function TrackSidebarClient({
             )}
           </div>
 
-          <ul className="mt-4 space-y-1">
-            <li>
-              <Link
-                href={timedHref}
-                className={topLinkClasses(pathname === timedHref)}
-              >
-                Timed Test
-              </Link>
-            </li>
-          </ul>
+          <div className="mt-4">
+            <Link
+              href={timedHref}
+              className={topLinkClasses(pathname === timedHref)}
+            >
+              Timed Test
+            </Link>
+          </div>
         </div>
 
         {otherTracks.length > 0 && (
