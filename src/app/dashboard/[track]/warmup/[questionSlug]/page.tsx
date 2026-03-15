@@ -71,6 +71,7 @@ export default async function WarmupQuestionPage({ params }: PageProps) {
         expectedIncludes={question.expectedIncludes}
         forbiddenIncludes={question.forbiddenIncludes}
         acceptedPatterns={question.acceptedPatterns}
+        expectedColumns={question.expectedColumns}
       />
 
       <AttemptHistory
