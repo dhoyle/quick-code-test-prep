@@ -14,7 +14,6 @@ export const SQL_WARMUP_QUESTIONS: WarmupQuestion[] = [
     promptText:
       "Write a SQL query that returns the name and age columns from the users table.",
     expectedIncludes: ["select", "name", "age", "from users"],
-    expectedColumns: ["name", "age"]
     forbiddenIncludes: ["serial", "*"],
     acceptedPatterns: [
       "select name, age from users",
