@@ -33,10 +33,20 @@ type Props = {
   otherTracks: Track[];
 };
 
-function linkClasses(isActive: boolean) {
+function itemClasses(isActive: boolean, nested = false) {
+  const base = nested
+    ? "block rounded px-2 py-1 text-sm"
+    : "block rounded px-2 py-1 text-sm";
+
   return isActive
-    ? "block text-sm font-semibold text-black"
-    : "block text-sm text-gray-700 hover:underline";
+    ? `${base} border-l-2 border-black bg-gray-100 font-semibold text-black`
+    : `${base} text-gray-700 hover:bg-gray-50 hover:underline`;
+}
+
+function topLinkClasses(isActive: boolean) {
+  return isActive
+    ? "block rounded px-2 py-1 font-semibold text-black"
+    : "block rounded px-2 py-1 text-gray-700 hover:bg-gray-50 hover:underline";
 }
 
 export default function TrackSidebarClient({
@@ -48,6 +58,7 @@ export default function TrackSidebarClient({
 }: Props) {
   const pathname = usePathname();
 
+  const trackHref = `/dashboard/${track}`;
   const warmupMainHref = `/dashboard/${track}/warmup`;
   const timedHref = `/dashboard/${track}/timed`;
 
@@ -59,20 +70,18 @@ export default function TrackSidebarClient({
         <div>
           <Link
             href="/dashboard"
-            className={pathname === "/dashboard" ? "font-semibold" : "underline"}
+            className={topLinkClasses(pathname === "/dashboard")}
           >
             Dashboard
           </Link>
         </div>
 
         <div>
-          <p className="text-sm font-semibold text-gray-500">Current Track</p>
+          <p className="px-2 text-sm font-semibold text-gray-500">Current Track</p>
           <div className="mt-2">
             <Link
-              href={`/dashboard/${track}`}
-              className={
-                pathname === `/dashboard/${track}` ? "font-semibold" : "underline"
-              }
+              href={trackHref}
+              className={topLinkClasses(pathname === trackHref)}
             >
               {trackTitle}
             </Link>
@@ -80,15 +89,15 @@ export default function TrackSidebarClient({
         </div>
 
         <div>
-          <p className="text-sm font-semibold text-gray-500">Crash Course</p>
-          <ul className="mt-2 space-y-2">
+          <p className="px-2 text-sm font-semibold text-gray-500">Crash Course</p>
+          <ul className="mt-2 space-y-1">
             {lessons.map((lesson) => {
               const href = `/dashboard/${track}/crash-course/${lesson.slug}`;
               const isActive = pathname === href;
 
               return (
                 <li key={lesson.id}>
-                  <Link href={href} className={linkClasses(isActive)}>
+                  <Link href={href} className={itemClasses(isActive, true)}>
                     {lesson.lesson_order}. {lesson.title}
                   </Link>
                 </li>
@@ -98,28 +107,25 @@ export default function TrackSidebarClient({
         </div>
 
         <div>
-          <p className="text-sm font-semibold text-gray-500">Practice Tests</p>
+          <p className="px-2 text-sm font-semibold text-gray-500">Practice Tests</p>
 
           <div className="mt-2">
             <Link
               href={warmupMainHref}
-              className={linkClasses(
-                pathname === warmupMainHref ||
-                  pathname.startsWith(`${warmupMainHref}/`)
-              )}
+              className={topLinkClasses(pathname === warmupMainHref)}
             >
               Warmup Test
             </Link>
 
             {warmupQuestions.length > 0 && (
-              <ul className="mt-2 ml-4 space-y-2">
+              <ul className="mt-2 ml-4 space-y-1">
                 {warmupQuestions.map((question, index) => {
                   const href = `/dashboard/${track}/warmup/${question.slug}`;
                   const isActive = pathname === href;
 
                   return (
                     <li key={question.slug}>
-                      <Link href={href} className={linkClasses(isActive)}>
+                      <Link href={href} className={itemClasses(isActive, true)}>
                         {index + 1}. {question.title}
                       </Link>
                     </li>
@@ -129,11 +135,11 @@ export default function TrackSidebarClient({
             )}
           </div>
 
-          <ul className="mt-4 space-y-2">
+          <ul className="mt-4 space-y-1">
             <li>
               <Link
                 href={timedHref}
-                className={linkClasses(pathname === timedHref)}
+                className={topLinkClasses(pathname === timedHref)}
               >
                 Timed Test
               </Link>
@@ -143,15 +149,15 @@ export default function TrackSidebarClient({
 
         {otherTracks.length > 0 && (
           <div>
-            <p className="text-sm font-semibold text-gray-500">Other Tracks</p>
-            <ul className="mt-2 space-y-2">
+            <p className="px-2 text-sm font-semibold text-gray-500">Other Tracks</p>
+            <ul className="mt-2 space-y-1">
               {otherTracks.map((otherTrack) => {
                 const href = `/dashboard/${otherTrack.slug}`;
                 const isActive = pathname === href;
 
                 return (
                   <li key={otherTrack.id}>
-                    <Link href={href} className={linkClasses(isActive)}>
+                    <Link href={href} className={itemClasses(isActive)}>
                       {otherTrack.title}
                     </Link>
                   </li>
