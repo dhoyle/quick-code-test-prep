@@ -23,13 +23,25 @@ type WarmupQuestion = {
   slug: string;
   title: string;
   promptText: string;
+  expectedIncludes: string[];
+  forbiddenIncludes?: string[];
+  acceptedPatterns?: string[];
 };
+
+type WarmupProgressMap = Record<
+  string,
+  {
+    bestScore: number;
+    isComplete: boolean;
+  }
+>;
 
 type Props = {
   track: string;
   trackTitle: string;
   lessons: Lesson[];
   warmupQuestions: WarmupQuestion[];
+  warmupProgress: WarmupProgressMap;
   otherTracks: Track[];
 };
 
@@ -52,6 +64,7 @@ export default function TrackSidebarClient({
   trackTitle,
   lessons,
   warmupQuestions,
+  warmupProgress,
   otherTracks,
 }: Props) {
   const pathname = usePathname();
@@ -116,11 +129,25 @@ export default function TrackSidebarClient({
                 {warmupQuestions.map((question, index) => {
                   const href = `/dashboard/${track}/warmup/${question.slug}`;
                   const isActive = pathname === href;
+                  const progress = warmupProgress[question.slug];
 
                   return (
                     <li key={question.slug}>
-                      <Link href={href} className={itemClasses(isActive)}>
-                        {index + 1}. {question.title}
+                      <Link
+                        href={href}
+                        className={`${itemClasses(
+                          isActive
+                        )} flex items-center justify-between gap-2`}
+                      >
+                        <span>
+                          {index + 1}. {question.title}
+                        </span>
+
+                        {progress && (
+                          <span className="text-xs text-gray-500">
+                            {progress.isComplete ? "✓" : `${progress.bestScore}%`}
+                          </span>
+                        )}
                       </Link>
                     </li>
                   );

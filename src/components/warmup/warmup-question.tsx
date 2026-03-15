@@ -92,17 +92,27 @@ export default function WarmupQuestion({
       {error && <p className="mt-3 text-red-600">{error}</p>}
 
       {checkResult && (
-        <div className="mt-4 rounded border p-4">
-          <p className="font-semibold">
-            {checkResult.isCorrect
-              ? `Correct (${checkResult.score}%)`
-              : `Needs work (${checkResult.score}%)`}
-          </p>
+        <div className="mt-4 rounded border bg-gray-50 p-4">
+          <div className="flex items-center justify-between gap-4">
+            <p
+              className={
+                checkResult.isCorrect
+                  ? "font-semibold text-green-700"
+                  : "font-semibold text-amber-700"
+              }
+            >
+              {checkResult.isCorrect ? "✅ Correct" : "⚠️ Needs work"}
+            </p>
+
+            <p className="text-sm font-medium text-gray-700">
+              Score: {checkResult.score}%
+            </p>
+          </div>
 
           {checkResult.missing.length > 0 && (
-            <div className="mt-2">
+            <div className="mt-3">
               <p className="text-sm font-medium text-gray-700">
-                Missing elements:
+                Missing elements
               </p>
               <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
                 {checkResult.missing.map((item) => (
@@ -113,9 +123,9 @@ export default function WarmupQuestion({
           )}
 
           {checkResult.forbiddenMatched.length > 0 && (
-            <div className="mt-2">
+            <div className="mt-3">
               <p className="text-sm font-medium text-gray-700">
-                Problematic elements:
+                Problematic elements
               </p>
               <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
                 {checkResult.forbiddenMatched.map((item) => (

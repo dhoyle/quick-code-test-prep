@@ -140,4 +140,44 @@ export const SQL_WARMUP_QUESTIONS: WarmupQuestion[] = [
       "from users",
     ],
   },
+  {
+    slug: "distinct-departments",
+    title: "DISTINCT Departments",
+    promptText:
+      "Write a SQL query that returns the distinct department names from the employees table.",
+    expectedIncludes: ["select", "distinct", "department", "from employees"],
+  },
+  {
+    slug: "null-emails",
+    title: "NULL Emails",
+    promptText:
+      "Write a SQL query that returns all users whose email is NULL.",
+    expectedIncludes: ["select", "from users", "where", "email is null"],
+  },
+  {
+    slug: "between-salaries",
+    title: "BETWEEN Salaries",
+    promptText:
+      "Write a SQL query that returns all employees whose salary is between 50000 and 100000.",
+    expectedIncludes: [
+      "select",
+      "from employees",
+      "where",
+      "salary between 50000 and 100000",
+    ],
+  },
+  {
+    slug: "in-departments",
+    title: "IN Departments",
+    promptText:
+      "Write a SQL query that returns all employees whose department is either 'Sales' or 'Marketing'.",
+    expectedIncludes: [
+      "select",
+      "from employees",
+      "where",
+      "department in",
+      "'sales'",
+      "'marketing'",
+    ],
+  },
 ];
