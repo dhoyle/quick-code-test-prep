@@ -136,6 +136,18 @@ export default function WarmupQuestion({
           )}
         </div>
       )}
+      {checkResult.unexpectedColumns.length > 0 && (
+        <div className="mt-2">
+          <p className="text-sm font-medium text-gray-700">
+            Unexpected columns
+          </p>
+          <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
+            {checkResult.unexpectedColumns.map((col) => (
+              <li key={col}>{col}</li>
+            ))}
+          </ul>
+        </div>
+      )}
     </section>
   );
 }
