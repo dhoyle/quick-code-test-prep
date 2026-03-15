@@ -19,10 +19,17 @@ type Lesson = {
   track_id: string;
 };
 
+type WarmupQuestion = {
+  slug: string;
+  title: string;
+  promptText: string;
+};
+
 type Props = {
   track: string;
   trackTitle: string;
   lessons: Lesson[];
+  warmupQuestions: WarmupQuestion[];
   otherTracks: Track[];
 };
 
@@ -36,9 +43,13 @@ export default function TrackSidebarClient({
   track,
   trackTitle,
   lessons,
+  warmupQuestions,
   otherTracks,
 }: Props) {
   const pathname = usePathname();
+
+  const warmupMainHref = `/dashboard/${track}/warmup`;
+  const timedHref = `/dashboard/${track}/timed`;
 
   return (
     <aside className="w-72 shrink-0 border-r p-6">
@@ -88,19 +99,41 @@ export default function TrackSidebarClient({
 
         <div>
           <p className="text-sm font-semibold text-gray-500">Practice Tests</p>
-          <ul className="mt-2 space-y-2">
+
+          <div className="mt-2">
+            <Link
+              href={warmupMainHref}
+              className={linkClasses(
+                pathname === warmupMainHref ||
+                  pathname.startsWith(`${warmupMainHref}/`)
+              )}
+            >
+              Warmup Test
+            </Link>
+
+            {warmupQuestions.length > 0 && (
+              <ul className="mt-2 ml-4 space-y-2">
+                {warmupQuestions.map((question, index) => {
+                  const href = `/dashboard/${track}/warmup/${question.slug}`;
+                  const isActive = pathname === href;
+
+                  return (
+                    <li key={question.slug}>
+                      <Link href={href} className={linkClasses(isActive)}>
+                        {index + 1}. {question.title}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
+          <ul className="mt-4 space-y-2">
             <li>
               <Link
-                href={`/dashboard/${track}/warmup`}
-                className={linkClasses(pathname === `/dashboard/${track}/warmup`)}
-              >
-                Warmup Test
-              </Link>
-            </li>
-            <li>
-              <Link
-                href={`/dashboard/${track}/timed`}
-                className={linkClasses(pathname === `/dashboard/${track}/timed`)}
+                href={timedHref}
+                className={linkClasses(pathname === timedHref)}
               >
                 Timed Test
               </Link>

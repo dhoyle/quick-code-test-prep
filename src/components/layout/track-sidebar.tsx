@@ -1,6 +1,7 @@
 import { getTrackBySlug, getTracks } from "@/db/tracks";
 import { getLessonsByTrackSlug } from "@/db/lessons";
 import TrackSidebarClient from "@/components/layout/track-sidebar-client";
+import { SQL_WARMUP_QUESTIONS } from "@/data/warmup-questions";
 
 type Props = {
   track: string;
@@ -20,12 +21,14 @@ export default async function TrackSidebar({ track }: Props) {
   }
 
   const otherTracks = allTracks.filter((t) => t.slug !== track);
+  const warmupQuestions = track === "sql" ? SQL_WARMUP_QUESTIONS : [];
 
   return (
     <TrackSidebarClient
       track={track}
       trackTitle={trackData.title}
       lessons={lessons}
+      warmupQuestions={warmupQuestions}
       otherTracks={otherTracks}
     />
   );
