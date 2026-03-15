@@ -5,6 +5,7 @@ export type WarmupQuestion = {
   expectedIncludes: string[];
   forbiddenIncludes?: string[];
   acceptedPatterns?: string[];
+  expectedColumns?: string[];
 };
 
 export const SQL_WARMUP_QUESTIONS: WarmupQuestion[] = [
@@ -13,12 +14,13 @@ export const SQL_WARMUP_QUESTIONS: WarmupQuestion[] = [
     title: "Basic SELECT",
     promptText:
       "Write a SQL query that returns the name and age columns from the users table.",
-    expectedIncludes: ["select", "name", "age", "from users"],
+    expectedIncludes: ["select", "from users"],
     forbiddenIncludes: ["serial", "*"],
     acceptedPatterns: [
       "select name, age from users",
       "select age, name from users",
     ],
+    expectedColumns: ["name", "age"],
   },
   {
     slug: "where-filter",

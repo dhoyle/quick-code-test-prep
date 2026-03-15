@@ -13,6 +13,7 @@ type Props = {
   expectedIncludes: string[];
   forbiddenIncludes?: string[];
   acceptedPatterns?: string[];
+  expectedColumns?: string[];
 };
 
 export default function WarmupQuestion({
@@ -23,6 +24,7 @@ export default function WarmupQuestion({
   expectedIncludes,
   forbiddenIncludes,
   acceptedPatterns,
+  expectedColumns,
 }: Props) {
   const router = useRouter();
 
@@ -44,6 +46,7 @@ export default function WarmupQuestion({
         expectedIncludes,
         forbiddenIncludes,
         acceptedPatterns,
+        expectedColumns,
       });
 
       setCheckResult(resultData);
@@ -130,6 +133,19 @@ export default function WarmupQuestion({
               <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
                 {checkResult.forbiddenMatched.map((item) => (
                   <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {checkResult.unexpectedColumns.length > 0 && (
+            <div className="mt-3">
+              <p className="text-sm font-medium text-gray-700">
+                Unexpected columns
+              </p>
+              <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
+                {checkResult.unexpectedColumns.map((column) => (
+                  <li key={column}>{column}</li>
                 ))}
               </ul>
             </div>

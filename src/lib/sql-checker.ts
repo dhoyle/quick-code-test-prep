@@ -4,6 +4,7 @@ export type SqlCheckResult = {
   matched: string[];
   missing: string[];
   forbiddenMatched: string[];
+  unexpectedColumns: string[];
 };
 
 function normalizeSql(input: string) {
@@ -14,11 +15,24 @@ function normalizeSql(input: string) {
     .trim();
 }
 
+function extractSelectColumns(sql: string): string[] {
+  const match = sql.match(/select (.*?) from/i);
+
+  if (!match) return [];
+
+  return match[1]
+    .split(",")
+    .map((column) => column.trim())
+    .map((column) => column.replace(/.*\./, ""))
+    .map((column) => column.replace(/\s+as\s+.+$/i, "").trim());
+}
+
 type CheckSqlAttemptInput = {
   userAnswer: string;
   expectedIncludes: string[];
   forbiddenIncludes?: string[];
   acceptedPatterns?: string[];
+  expectedColumns?: string[];
 };
 
 export function checkSqlAttempt({
@@ -26,10 +40,12 @@ export function checkSqlAttempt({
   expectedIncludes,
   forbiddenIncludes = [],
   acceptedPatterns = [],
+  expectedColumns = [],
 }: CheckSqlAttemptInput): SqlCheckResult {
   const normalized = normalizeSql(userAnswer);
 
   const normalizedAcceptedPatterns = acceptedPatterns.map(normalizeSql);
+
   const exactAccepted =
     normalizedAcceptedPatterns.length > 0 &&
     normalizedAcceptedPatterns.includes(normalized);
@@ -46,6 +62,19 @@ export function checkSqlAttempt({
     normalized.includes(normalizeSql(fragment))
   );
 
+  const selectedColumns = extractSelectColumns(normalized);
+
+  const normalizedExpectedColumns = expectedColumns.map((column) =>
+    normalizeSql(column)
+  );
+
+  const unexpectedColumns =
+    normalizedExpectedColumns.length > 0
+      ? selectedColumns.filter(
+          (column) => !normalizedExpectedColumns.includes(normalizeSql(column))
+        )
+      : [];
+
   const baseScore =
     expectedIncludes.length === 0
       ? 0
@@ -57,12 +86,18 @@ export function checkSqlAttempt({
     score = Math.max(0, score - forbiddenMatched.length * 25);
   }
 
+  if (unexpectedColumns.length > 0) {
+    score = Math.max(0, score - unexpectedColumns.length * 25);
+  }
+
   if (exactAccepted) {
     score = 100;
   }
 
   const isCorrect =
-    (exactAccepted || missing.length === 0) && forbiddenMatched.length === 0;
+    (exactAccepted || missing.length === 0) &&
+    forbiddenMatched.length === 0 &&
+    unexpectedColumns.length === 0;
 
   return {
     isCorrect,
@@ -70,5 +105,6 @@ export function checkSqlAttempt({
     matched,
     missing,
     forbiddenMatched,
+    unexpectedColumns,
   };
 }
