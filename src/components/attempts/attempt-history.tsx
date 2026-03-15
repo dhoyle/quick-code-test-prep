@@ -9,6 +9,7 @@ type AttemptResult = {
   score?: number;
   matched?: string[];
   missing?: string[];
+  forbiddenMatched?: string[];
 };
 
 type Attempt = {
@@ -98,6 +99,7 @@ export default function AttemptHistory({
                     >
                       {attempt.result.isCorrect ? "Correct" : "Needs work"}
                     </span>
+
                     {typeof attempt.result.score === "number" && (
                       <span className="ml-2 text-gray-600">
                         {attempt.result.score}%
@@ -111,18 +113,33 @@ export default function AttemptHistory({
                 {attempt.user_answer}
               </pre>
 
-              {attempt.result?.missing && attempt.result.missing.length > 0 && (
-                <div className="mt-3">
-                  <p className="text-xs font-medium text-gray-700">
-                    Missing elements:
-                  </p>
-                  <ul className="mt-1 list-disc pl-5 text-xs text-gray-600">
-                    {attempt.result.missing.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+              {attempt.result?.missing &&
+                attempt.result.missing.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-xs font-medium text-gray-700">
+                      Missing elements:
+                    </p>
+                    <ul className="mt-1 list-disc pl-5 text-xs text-gray-600">
+                      {attempt.result.missing.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+              {attempt.result?.forbiddenMatched &&
+                attempt.result.forbiddenMatched.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-xs font-medium text-gray-700">
+                      Problematic elements:
+                    </p>
+                    <ul className="mt-1 list-disc pl-5 text-xs text-gray-600">
+                      {attempt.result.forbiddenMatched.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
             </div>
           ))}
         </div>

@@ -5,6 +5,7 @@ export type AttemptResult = {
   score?: number;
   matched?: string[];
   missing?: string[];
+  forbiddenMatched?: string[];
 };
 
 export type Attempt = {
