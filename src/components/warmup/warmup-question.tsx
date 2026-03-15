@@ -11,6 +11,8 @@ type Props = {
   promptTitle: string;
   promptText: string;
   expectedIncludes: string[];
+  forbiddenIncludes?: string[];
+  acceptedPatterns?: string[];
 };
 
 export default function WarmupQuestion({
@@ -19,6 +21,8 @@ export default function WarmupQuestion({
   promptTitle,
   promptText,
   expectedIncludes,
+  forbiddenIncludes,
+  acceptedPatterns,
 }: Props) {
   const router = useRouter();
 
@@ -35,7 +39,13 @@ export default function WarmupQuestion({
     setCheckResult(null);
 
     startTransition(async () => {
-      const resultData = checkSqlAttempt(answer, expectedIncludes);
+      const resultData = checkSqlAttempt({
+        userAnswer: answer,
+        expectedIncludes,
+        forbiddenIncludes,
+        acceptedPatterns,
+      });
+
       setCheckResult(resultData);
 
       const result = await saveAttempt({
@@ -96,6 +106,19 @@ export default function WarmupQuestion({
               </p>
               <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
                 {checkResult.missing.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {checkResult.forbiddenMatched.length > 0 && (
+            <div className="mt-2">
+              <p className="text-sm font-medium text-gray-700">
+                Problematic elements:
+              </p>
+              <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
+                {checkResult.forbiddenMatched.map((item) => (
                   <li key={item}>{item}</li>
                 ))}
               </ul>

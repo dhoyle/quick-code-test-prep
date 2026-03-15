@@ -3,6 +3,8 @@ export type WarmupQuestion = {
   title: string;
   promptText: string;
   expectedIncludes: string[];
+  forbiddenIncludes?: string[];
+  acceptedPatterns?: string[];
 };
 
 export const SQL_WARMUP_QUESTIONS: WarmupQuestion[] = [
@@ -12,6 +14,11 @@ export const SQL_WARMUP_QUESTIONS: WarmupQuestion[] = [
     promptText:
       "Write a SQL query that returns the name and age columns from the users table.",
     expectedIncludes: ["select", "name", "age", "from users"],
+    forbiddenIncludes: ["serial", "*"],
+    acceptedPatterns: [
+      "select name, age from users",
+      "select age, name from users",
+    ],
   },
   {
     slug: "where-filter",
@@ -81,7 +88,6 @@ export const SQL_WARMUP_QUESTIONS: WarmupQuestion[] = [
       "from employees",
       "group by department",
       "having",
-      "count(",
       "> 10",
     ],
   },
@@ -95,7 +101,7 @@ export const SQL_WARMUP_QUESTIONS: WarmupQuestion[] = [
       "users.name",
       "orders.total",
       "from users",
-      "inner join orders",
+      "join orders",
       "on",
       "users.id",
       "orders.user_id",

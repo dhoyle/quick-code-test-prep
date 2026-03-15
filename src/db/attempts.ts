@@ -1,9 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
 
+export type AttemptResult = {
+  isCorrect?: boolean;
+  score?: number;
+  matched?: string[];
+  missing?: string[];
+};
+
 export type Attempt = {
   id: string;
   user_answer: string;
   created_at: string;
+  result: AttemptResult | null;
 };
 
 export async function getRecentAttempts(
@@ -16,7 +24,7 @@ export async function getRecentAttempts(
 
   const { data, error } = await supabase
     .from("attempts")
-    .select("id, user_answer, created_at")
+    .select("id, user_answer, created_at, result")
     .eq("user_id", userId)
     .eq("track_id", trackId)
     .eq("mode", "warmup")

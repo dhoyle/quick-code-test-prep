@@ -69,6 +69,8 @@ export default async function WarmupQuestionPage({ params }: PageProps) {
         promptTitle={question.title}
         promptText={question.promptText}
         expectedIncludes={question.expectedIncludes}
+        forbiddenIncludes={question.forbiddenIncludes}
+        acceptedPatterns={question.acceptedPatterns}
       />
 
       <AttemptHistory

@@ -4,10 +4,18 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { clearAttempts } from "@/actions/clear-attempts";
 
+type AttemptResult = {
+  isCorrect?: boolean;
+  score?: number;
+  matched?: string[];
+  missing?: string[];
+};
+
 type Attempt = {
   id: string;
   user_answer: string;
   created_at: string;
+  result: AttemptResult | null;
 };
 
 type Props = {
@@ -74,13 +82,47 @@ export default function AttemptHistory({
 
           {attempts.map((attempt) => (
             <div key={attempt.id} className="rounded border p-3 text-sm">
-              <div className="mb-1 text-xs text-gray-500">
-                {new Date(attempt.created_at).toLocaleString()}
+              <div className="mb-2 flex items-center justify-between gap-4">
+                <div className="text-xs text-gray-500">
+                  {new Date(attempt.created_at).toLocaleString()}
+                </div>
+
+                {attempt.result && (
+                  <div className="text-xs">
+                    <span
+                      className={
+                        attempt.result.isCorrect
+                          ? "font-semibold text-green-700"
+                          : "font-semibold text-amber-700"
+                      }
+                    >
+                      {attempt.result.isCorrect ? "Correct" : "Needs work"}
+                    </span>
+                    {typeof attempt.result.score === "number" && (
+                      <span className="ml-2 text-gray-600">
+                        {attempt.result.score}%
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
               <pre className="whitespace-pre-wrap font-mono">
                 {attempt.user_answer}
               </pre>
+
+              {attempt.result?.missing && attempt.result.missing.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-gray-700">
+                    Missing elements:
+                  </p>
+                  <ul className="mt-1 list-disc pl-5 text-xs text-gray-600">
+                    {attempt.result.missing.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           ))}
         </div>
