@@ -10,6 +10,7 @@ type SaveAttemptInput = {
   userAnswer: string;
   mode: string;
   questionSlug: string;
+  result?: unknown;
 };
 
 export async function saveAttempt(input: SaveAttemptInput) {
@@ -56,7 +57,7 @@ export async function saveAttempt(input: SaveAttemptInput) {
     prompt_title: input.promptTitle,
     prompt_text: input.promptText,
     user_answer: trimmedAnswer,
-    result: null,
+    result: input.result ?? null,
   });
 
   if (error) {
