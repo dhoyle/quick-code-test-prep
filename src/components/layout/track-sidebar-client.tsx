@@ -26,6 +26,7 @@ type WarmupQuestion = {
   expectedIncludes: string[];
   forbiddenIncludes?: string[];
   acceptedPatterns?: string[];
+  expectedColumns?: string[];
 };
 
 type WarmupProgressMap = Record<
@@ -71,12 +72,15 @@ export default function TrackSidebarClient({
 
   const trackHref = `/dashboard/${track}`;
   const timedHref = `/dashboard/${track}/timed`;
+  const timedHistoryHref = `/dashboard/${track}/timed/history`;
 
   return (
     <aside className="w-72 shrink-0 border-r p-6">
       <h2 className="text-lg font-semibold">Quick Code Test Prep</h2>
 
       <nav className="mt-6 space-y-6">
+
+        {/* Dashboard */}
         <div>
           <Link
             href="/dashboard"
@@ -86,8 +90,12 @@ export default function TrackSidebarClient({
           </Link>
         </div>
 
+        {/* Current Track */}
         <div>
-          <p className="px-2 text-sm font-semibold text-gray-500">Current Track</p>
+          <p className="px-2 text-sm font-semibold text-gray-500">
+            Current Track
+          </p>
+
           <div className="mt-2">
             <Link
               href={trackHref}
@@ -98,8 +106,12 @@ export default function TrackSidebarClient({
           </div>
         </div>
 
+        {/* Crash Course */}
         <div>
-          <p className="px-2 text-sm font-semibold text-gray-500">Crash Course</p>
+          <p className="px-2 text-sm font-semibold text-gray-500">
+            Crash Course
+          </p>
+
           <ul className="mt-2 space-y-1">
             {lessons.map((lesson) => {
               const href = `/dashboard/${track}/crash-course/${lesson.slug}`;
@@ -116,9 +128,13 @@ export default function TrackSidebarClient({
           </ul>
         </div>
 
+        {/* Practice Tests */}
         <div>
-          <p className="px-2 text-sm font-semibold text-gray-500">Practice Tests</p>
+          <p className="px-2 text-sm font-semibold text-gray-500">
+            Practice Tests
+          </p>
 
+          {/* Warmup */}
           <div className="mt-2">
             <p className="px-2 text-sm font-semibold text-gray-500">
               Warmup Test
@@ -137,7 +153,7 @@ export default function TrackSidebarClient({
                         href={href}
                         className={`${itemClasses(
                           isActive
-                        )} flex items-center justify-between gap-2`}
+                        )} flex items-center justify-between`}
                       >
                         <span>
                           {index + 1}. {question.title}
@@ -145,7 +161,9 @@ export default function TrackSidebarClient({
 
                         {progress && (
                           <span className="text-xs text-gray-500">
-                            {progress.isComplete ? "✓" : `${progress.bestScore}%`}
+                            {progress.isComplete
+                              ? "✓"
+                              : `${progress.bestScore}%`}
                           </span>
                         )}
                       </Link>
@@ -156,19 +174,31 @@ export default function TrackSidebarClient({
             )}
           </div>
 
-          <div className="mt-4">
+          {/* Timed Test */}
+          <div className="mt-4 space-y-1">
             <Link
               href={timedHref}
               className={topLinkClasses(pathname === timedHref)}
             >
               Timed Test
             </Link>
+
+            <Link
+              href={timedHistoryHref}
+              className={topLinkClasses(pathname === timedHistoryHref)}
+            >
+              Timed Test History
+            </Link>
           </div>
         </div>
 
+        {/* Other Tracks */}
         {otherTracks.length > 0 && (
           <div>
-            <p className="px-2 text-sm font-semibold text-gray-500">Other Tracks</p>
+            <p className="px-2 text-sm font-semibold text-gray-500">
+              Other Tracks
+            </p>
+
             <ul className="mt-2 space-y-1">
               {otherTracks.map((otherTrack) => {
                 const href = `/dashboard/${otherTrack.slug}`;
@@ -185,6 +215,7 @@ export default function TrackSidebarClient({
             </ul>
           </div>
         )}
+
       </nav>
     </aside>
   );
