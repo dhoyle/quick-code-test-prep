@@ -57,7 +57,9 @@ export default async function TimedStartPage({ params }: PageProps) {
         </Link>
       </p>
 
-      <h1 className="mt-4 text-2xl font-bold">{trackData.title} — Timed Test</h1>
+      <h1 className="mt-4 text-2xl font-bold">
+        {trackData.title} — Timed Test
+      </h1>
 
       <TimedTest
         track={track}
@@ -68,3 +70,4 @@ export default async function TimedStartPage({ params }: PageProps) {
       />
     </div>
   );
+}

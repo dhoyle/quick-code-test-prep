@@ -2,23 +2,11 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getTrackBySlug } from "@/db/tracks";
-import { SQL_WARMUP_QUESTIONS } from "@/data/warmup-questions";
 import StartTimedTestButton from "@/components/timed/start-timed-test-button";
 
 type PageProps = {
   params: Promise<{ track: string }>;
 };
-
-function shuffleArray<T>(items: T[]): T[] {
-  const copy = [...items];
-
-  for (let i = copy.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-
-  return copy;
-}
 
 export default async function TimedPage({ params }: PageProps) {
   const { track } = await params;
@@ -38,8 +26,20 @@ export default async function TimedPage({ params }: PageProps) {
     notFound();
   }
 
-  const questions =
-    track === "sql" ? shuffleArray(SQL_WARMUP_QUESTIONS).slice(0, 5) : [];
+  const { data: activeSession } = await supabase
+    .from("timed_sessions")
+    .select("session_id")
+    .eq("user_id", user.id)
+    .eq("track_id", trackData.id)
+    .eq("status", "in_progress")
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const activeSessionId =
+    activeSession && typeof activeSession.session_id === "string"
+      ? activeSession.session_id
+      : null;
 
   return (
     <div>
@@ -49,7 +49,9 @@ export default async function TimedPage({ params }: PageProps) {
         </Link>
       </p>
 
-      <h1 className="mt-4 text-2xl font-bold">{trackData.title} — Timed Test</h1>
+      <h1 className="mt-4 text-2xl font-bold">
+        {trackData.title} — Timed Test
+      </h1>
 
       <p className="mt-2 text-gray-600">
         Complete a timed set of questions to simulate a coding assessment.
@@ -68,8 +70,7 @@ export default async function TimedPage({ params }: PageProps) {
         <div className="mt-6">
           <StartTimedTestButton
             track={track}
-            questions={questions}
-            durationSeconds={30 * 60}
+            activeSessionId={activeSessionId}
           />
         </div>
       </section>

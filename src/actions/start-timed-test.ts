@@ -39,7 +39,7 @@ export async function startTimedTest(trackSlug: string) {
     return { ok: false, error: "Track not found." };
   }
 
-  const { data: existing } = await supabase
+  const { data: existing, error: existingError } = await supabase
     .from("timed_sessions")
     .select("*")
     .eq("user_id", user.id)
@@ -48,6 +48,10 @@ export async function startTimedTest(trackSlug: string) {
     .order("started_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+
+  if (existingError) {
+    return { ok: false, error: existingError.message };
+  }
 
   if (existing) {
     return {
