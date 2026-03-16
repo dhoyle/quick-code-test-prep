@@ -49,9 +49,12 @@ export default async function TimedHistoryPage({ params }: PageProps) {
         {sessions.map((session) => (
           <div key={session.sessionId} className="rounded border p-4">
             <div className="flex items-center justify-between">
-              <p className="font-semibold">
+              <Link
+                href={`/dashboard/${track}/timed/history/${session.sessionId}`}
+                className="font-semibold underline"
+              >
                 Session — {new Date(session.createdAt).toLocaleString()}
-              </p>
+              </Link>
 
               <p className="text-sm text-gray-700">
                 Overall score: {session.overallScore}%
