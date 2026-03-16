@@ -15,6 +15,30 @@ function normalizeSql(input: string) {
     .trim();
 }
 
+function normalizeDisplayValue(input: string) {
+  return input.trim().replace(/\s+/g, " ");
+}
+
+function dedupeStrings(values: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const value of values) {
+    const displayValue = normalizeDisplayValue(value);
+
+    if (!displayValue) continue;
+
+    const dedupeKey = normalizeSql(displayValue);
+
+    if (seen.has(dedupeKey)) continue;
+
+    seen.add(dedupeKey);
+    result.push(displayValue);
+  }
+
+  return result;
+}
+
 function extractSelectColumns(sql: string): string[] {
   const match = sql.match(/select (.*?) from/i);
 
@@ -24,7 +48,8 @@ function extractSelectColumns(sql: string): string[] {
     .split(",")
     .map((column) => column.trim())
     .map((column) => column.replace(/.*\./, ""))
-    .map((column) => column.replace(/\s+as\s+.+$/i, "").trim());
+    .map((column) => column.replace(/\s+as\s+.+$/i, "").trim())
+    .filter(Boolean);
 }
 
 type CheckSqlAttemptInput = {
@@ -44,41 +69,55 @@ export function checkSqlAttempt({
 }: CheckSqlAttemptInput): SqlCheckResult {
   const normalized = normalizeSql(userAnswer);
 
-  const normalizedAcceptedPatterns = acceptedPatterns.map(normalizeSql);
+  const dedupedExpectedIncludes = dedupeStrings(expectedIncludes);
+  const dedupedForbiddenIncludes = dedupeStrings(forbiddenIncludes);
+  const dedupedAcceptedPatterns = dedupeStrings(acceptedPatterns);
+  const dedupedExpectedColumns = dedupeStrings(expectedColumns);
+
+  const normalizedAcceptedPatterns = dedupedAcceptedPatterns.map(normalizeSql);
 
   const exactAccepted =
     normalizedAcceptedPatterns.length > 0 &&
     normalizedAcceptedPatterns.includes(normalized);
 
-  const matched = expectedIncludes.filter((fragment) =>
-    normalized.includes(normalizeSql(fragment))
+  const matched = dedupeStrings(
+    dedupedExpectedIncludes.filter((fragment) =>
+      normalized.includes(normalizeSql(fragment))
+    )
   );
 
-  const missing = expectedIncludes.filter(
-    (fragment) => !normalized.includes(normalizeSql(fragment))
+  const missing = dedupeStrings(
+    dedupedExpectedIncludes.filter(
+      (fragment) => !normalized.includes(normalizeSql(fragment))
+    )
   );
 
-  const forbiddenMatched = forbiddenIncludes.filter((fragment) =>
-    normalized.includes(normalizeSql(fragment))
+  const forbiddenMatched = dedupeStrings(
+    dedupedForbiddenIncludes.filter((fragment) =>
+      normalized.includes(normalizeSql(fragment))
+    )
   );
 
-  const selectedColumns = extractSelectColumns(normalized);
+  const selectedColumns = dedupeStrings(extractSelectColumns(normalized));
 
-  const normalizedExpectedColumns = expectedColumns.map((column) =>
+  const normalizedExpectedColumns = dedupedExpectedColumns.map((column) =>
     normalizeSql(column)
   );
 
   const unexpectedColumns =
     normalizedExpectedColumns.length > 0
-      ? selectedColumns.filter(
-          (column) => !normalizedExpectedColumns.includes(normalizeSql(column))
+      ? dedupeStrings(
+          selectedColumns.filter(
+            (column) =>
+              !normalizedExpectedColumns.includes(normalizeSql(column))
+          )
         )
       : [];
 
   const baseScore =
-    expectedIncludes.length === 0
+    dedupedExpectedIncludes.length === 0
       ? 0
-      : Math.round((matched.length / expectedIncludes.length) * 100);
+      : Math.round((matched.length / dedupedExpectedIncludes.length) * 100);
 
   let score = baseScore;
 
