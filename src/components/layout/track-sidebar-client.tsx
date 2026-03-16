@@ -43,6 +43,7 @@ type Props = {
   lessons: Lesson[];
   warmupQuestions: WarmupQuestion[];
   warmupProgress: WarmupProgressMap;
+  bestTimedScore: number | null;
   otherTracks: Track[];
 };
 
@@ -66,6 +67,7 @@ export default function TrackSidebarClient({
   lessons,
   warmupQuestions,
   warmupProgress,
+  bestTimedScore,
   otherTracks,
 }: Props) {
   const pathname = usePathname();
@@ -79,8 +81,6 @@ export default function TrackSidebarClient({
       <h2 className="text-lg font-semibold">Quick Code Test Prep</h2>
 
       <nav className="mt-6 space-y-6">
-
-        {/* Dashboard */}
         <div>
           <Link
             href="/dashboard"
@@ -90,12 +90,8 @@ export default function TrackSidebarClient({
           </Link>
         </div>
 
-        {/* Current Track */}
         <div>
-          <p className="px-2 text-sm font-semibold text-gray-500">
-            Current Track
-          </p>
-
+          <p className="px-2 text-sm font-semibold text-gray-500">Current Track</p>
           <div className="mt-2">
             <Link
               href={trackHref}
@@ -106,12 +102,8 @@ export default function TrackSidebarClient({
           </div>
         </div>
 
-        {/* Crash Course */}
         <div>
-          <p className="px-2 text-sm font-semibold text-gray-500">
-            Crash Course
-          </p>
-
+          <p className="px-2 text-sm font-semibold text-gray-500">Crash Course</p>
           <ul className="mt-2 space-y-1">
             {lessons.map((lesson) => {
               const href = `/dashboard/${track}/crash-course/${lesson.slug}`;
@@ -128,13 +120,9 @@ export default function TrackSidebarClient({
           </ul>
         </div>
 
-        {/* Practice Tests */}
         <div>
-          <p className="px-2 text-sm font-semibold text-gray-500">
-            Practice Tests
-          </p>
+          <p className="px-2 text-sm font-semibold text-gray-500">Practice Tests</p>
 
-          {/* Warmup */}
           <div className="mt-2">
             <p className="px-2 text-sm font-semibold text-gray-500">
               Warmup Test
@@ -161,9 +149,7 @@ export default function TrackSidebarClient({
 
                         {progress && (
                           <span className="text-xs text-gray-500">
-                            {progress.isComplete
-                              ? "✓"
-                              : `${progress.bestScore}%`}
+                            {progress.isComplete ? "✓" : `${progress.bestScore}%`}
                           </span>
                         )}
                       </Link>
@@ -174,31 +160,33 @@ export default function TrackSidebarClient({
             )}
           </div>
 
-          {/* Timed Test */}
-          <div className="mt-4 space-y-1">
+          <div className="mt-4">
             <Link
               href={timedHref}
-              className={topLinkClasses(pathname === timedHref)}
+              className={`${topLinkClasses(
+                pathname === timedHref || pathname.startsWith(`${timedHref}/`)
+              )} flex items-center justify-between`}
             >
-              Timed Test
+              <span>Timed Test</span>
+              {bestTimedScore !== null && (
+                <span className="text-xs text-gray-500">{bestTimedScore}%</span>
+              )}
             </Link>
 
-            <Link
-              href={timedHistoryHref}
-              className={topLinkClasses(pathname === timedHistoryHref)}
-            >
-              Timed Test History
-            </Link>
+            <div className="ml-4 mt-1">
+              <Link
+                href={timedHistoryHref}
+                className={itemClasses(pathname === timedHistoryHref)}
+              >
+                Timed Test History
+              </Link>
+            </div>
           </div>
         </div>
 
-        {/* Other Tracks */}
         {otherTracks.length > 0 && (
           <div>
-            <p className="px-2 text-sm font-semibold text-gray-500">
-              Other Tracks
-            </p>
-
+            <p className="px-2 text-sm font-semibold text-gray-500">Other Tracks</p>
             <ul className="mt-2 space-y-1">
               {otherTracks.map((otherTrack) => {
                 const href = `/dashboard/${otherTrack.slug}`;
@@ -215,7 +203,6 @@ export default function TrackSidebarClient({
             </ul>
           </div>
         )}
-
       </nav>
     </aside>
   );

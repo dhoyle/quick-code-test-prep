@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getTrackBySlug, getTracks } from "@/db/tracks";
 import { getLessonsByTrackSlug } from "@/db/lessons";
 import { getWarmupProgress } from "@/db/warmup-progress";
+import { getBestTimedScore } from "@/db/timed-progress";
 import TrackSidebarClient from "@/components/layout/track-sidebar-client";
 import { SQL_WARMUP_QUESTIONS } from "@/data/warmup-questions";
 
@@ -30,10 +31,16 @@ export default async function TrackSidebar({ track }: Props) {
 
   const otherTracks = allTracks.filter((t) => t.slug !== track);
   const warmupQuestions = track === "sql" ? SQL_WARMUP_QUESTIONS : [];
+
   const warmupProgress =
     user && track === "sql"
       ? await getWarmupProgress(user.id, trackData.id)
       : {};
+
+  const bestTimedScore =
+    user && track === "sql"
+      ? await getBestTimedScore(user.id, trackData.id)
+      : null;
 
   return (
     <TrackSidebarClient
@@ -42,6 +49,7 @@ export default async function TrackSidebar({ track }: Props) {
       lessons={lessons}
       warmupQuestions={warmupQuestions}
       warmupProgress={warmupProgress}
+      bestTimedScore={bestTimedScore}
       otherTracks={otherTracks}
     />
   );
