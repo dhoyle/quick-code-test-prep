@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { checkSqlAttempt } from "@/lib/sql-checker";
+import { saveTimedTest } from "@/actions/save-timed-test";
 
 type TimedQuestion = {
   slug: string;
@@ -14,6 +15,7 @@ type TimedQuestion = {
 };
 
 type Props = {
+  track: string;
   questions: TimedQuestion[];
   durationSeconds?: number;
 };
@@ -21,11 +23,21 @@ type Props = {
 type PerQuestionResult = {
   slug: string;
   title: string;
+  promptText: string;
+  userAnswer: string;
   score: number;
   isCorrect: boolean;
+  missing: string[];
+  forbiddenMatched: string[];
+  unexpectedColumns: string[];
 };
 
+function createSessionId() {
+  return `timed_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export default function TimedTest({
+  track,
   questions,
   durationSeconds = 30 * 60,
 }: Props) {
@@ -33,6 +45,8 @@ export default function TimedTest({
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [results, setResults] = useState<PerQuestionResult[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (isSubmitted) return;
@@ -52,7 +66,7 @@ export default function TimedTest({
 
   useEffect(() => {
     if (timeLeft === 0 && !isSubmitted) {
-      handleSubmit();
+      void handleSubmit();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeLeft, isSubmitted]);
@@ -64,7 +78,7 @@ export default function TimedTest({
     }));
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     const graded = questions.map((question) => {
       const answer = answers[question.slug] ?? "";
 
@@ -79,13 +93,49 @@ export default function TimedTest({
       return {
         slug: question.slug,
         title: question.title,
+        promptText: question.promptText,
+        userAnswer: answer,
         score: result.score,
         isCorrect: result.isCorrect,
+        missing: result.missing,
+        forbiddenMatched: result.forbiddenMatched,
+        unexpectedColumns: result.unexpectedColumns,
       };
     });
 
     setResults(graded);
     setIsSubmitted(true);
+
+    setIsSaving(true);
+    setSaveMessage(null);
+
+    const sessionId = createSessionId();
+
+    const saveResult = await saveTimedTest({
+      trackSlug: track,
+      sessionId,
+      questions: graded.map((item) => ({
+        slug: item.slug,
+        title: item.title,
+        promptText: item.promptText,
+        userAnswer: item.userAnswer,
+        result: {
+          isCorrect: item.isCorrect,
+          score: item.score,
+          missing: item.missing,
+          forbiddenMatched: item.forbiddenMatched,
+          unexpectedColumns: item.unexpectedColumns,
+        },
+      })),
+    });
+
+    if (saveResult.ok) {
+      setSaveMessage("Timed test saved");
+    } else {
+      setSaveMessage(saveResult.error ?? "Failed to save timed test");
+    }
+
+    setIsSaving(false);
   }
 
   const overallScore = useMemo(() => {
@@ -103,9 +153,15 @@ export default function TimedTest({
         <div className="rounded border bg-gray-50 p-4">
           <h2 className="text-xl font-semibold">Timed Test Results</h2>
           <p className="mt-2 text-gray-700">Overall score: {overallScore}%</p>
+
+          {saveMessage && (
+            <p className="mt-2 text-sm text-gray-600">
+              {isSaving ? "Saving..." : saveMessage}
+            </p>
+          )}
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           {results.map((result, index) => (
             <div key={result.slug} className="rounded border p-4">
               <div className="flex items-center justify-between gap-4">
@@ -122,6 +178,49 @@ export default function TimedTest({
                   {result.isCorrect ? "Correct" : "Needs work"} — {result.score}%
                 </p>
               </div>
+
+              <pre className="mt-3 whitespace-pre-wrap rounded bg-gray-50 p-3 font-mono text-sm">
+                {result.userAnswer || "(No answer submitted)"}
+              </pre>
+
+              {result.missing.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-sm font-medium text-gray-700">
+                    Missing elements
+                  </p>
+                  <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
+                    {result.missing.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {result.forbiddenMatched.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-sm font-medium text-gray-700">
+                    Problematic elements
+                  </p>
+                  <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
+                    {result.forbiddenMatched.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {result.unexpectedColumns.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-sm font-medium text-gray-700">
+                    Unexpected columns
+                  </p>
+                  <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
+                    {result.unexpectedColumns.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -168,7 +267,7 @@ export default function TimedTest({
 
       <button
         type="button"
-        onClick={handleSubmit}
+        onClick={() => void handleSubmit()}
         className="rounded border px-4 py-2"
       >
         Submit Timed Test

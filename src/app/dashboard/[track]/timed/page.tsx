@@ -2,12 +2,23 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getTrackBySlug } from "@/db/tracks";
-import { SQL_TIMED_QUESTIONS } from "@/data/timed-questions";
+import { SQL_WARMUP_QUESTIONS } from "@/data/warmup-questions";
 import TimedTest from "@/components/timed/timed-test";
 
 type PageProps = {
   params: Promise<{ track: string }>;
 };
+
+function shuffleArray<T>(items: T[]): T[] {
+  const copy = [...items];
+
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+
+  return copy;
+}
 
 export default async function TimedPage({ params }: PageProps) {
   const { track } = await params;
@@ -28,7 +39,8 @@ export default async function TimedPage({ params }: PageProps) {
     notFound();
   }
 
-  const questions = track === "sql" ? SQL_TIMED_QUESTIONS : [];
+  const questions =
+    track === "sql" ? shuffleArray(SQL_WARMUP_QUESTIONS).slice(0, 5) : [];
 
   return (
     <div>
@@ -44,7 +56,7 @@ export default async function TimedPage({ params }: PageProps) {
         Complete these questions under time pressure to simulate a coding test.
       </p>
 
-      <TimedTest questions={questions} />
+      <TimedTest track={track} questions={questions} />
     </div>
   );
 }
