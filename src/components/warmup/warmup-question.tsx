@@ -16,6 +16,26 @@ type Props = {
   expectedColumns?: string[];
 };
 
+function getCoachingMessage(result: SqlCheckResult): string | null {
+  if (result.unexpectedColumns.length > 0) {
+    return "Tip: Only return the columns requested in the prompt.";
+  }
+
+  if (result.forbiddenMatched.length > 0) {
+    return "Tip: Avoid shortcuts or disallowed elements, and focus on the exact SQL pattern the question is asking for.";
+  }
+
+  if (result.missing.length > 0) {
+    return "Tip: Re-read the prompt and make sure your query includes each required SQL clause or condition.";
+  }
+
+  if (result.isCorrect) {
+    return "Nice work — this answer includes the required SQL elements for the prompt.";
+  }
+
+  return null;
+}
+
 export default function WarmupQuestion({
   track,
   questionSlug,
@@ -71,6 +91,8 @@ export default function WarmupQuestion({
       router.refresh();
     });
   }
+
+  const coachingMessage = checkResult ? getCoachingMessage(checkResult) : null;
 
   return (
     <section className="mt-8 rounded border p-4">
@@ -148,6 +170,13 @@ export default function WarmupQuestion({
                   <li key={column}>{column}</li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {coachingMessage && (
+            <div className="mt-4 rounded border border-blue-200 bg-blue-50 p-3">
+              <p className="text-sm font-medium text-blue-900">Coaching tip</p>
+              <p className="mt-1 text-sm text-blue-800">{coachingMessage}</p>
             </div>
           )}
         </div>
