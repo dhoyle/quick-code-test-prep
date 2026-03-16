@@ -2,16 +2,28 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getTrackBySlug } from "@/db/tracks";
+import { SQL_WARMUP_QUESTIONS } from "@/data/warmup-questions";
+import StartTimedTestButton from "@/components/timed/start-timed-test-button";
 
 type PageProps = {
   params: Promise<{ track: string }>;
 };
 
+function shuffleArray<T>(items: T[]): T[] {
+  const copy = [...items];
+
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+
+  return copy;
+}
+
 export default async function TimedPage({ params }: PageProps) {
   const { track } = await params;
 
   const supabase = await createClient();
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -25,6 +37,9 @@ export default async function TimedPage({ params }: PageProps) {
   if (!trackData) {
     notFound();
   }
+
+  const questions =
+    track === "sql" ? shuffleArray(SQL_WARMUP_QUESTIONS).slice(0, 5) : [];
 
   return (
     <div>
@@ -51,12 +66,11 @@ export default async function TimedPage({ params }: PageProps) {
         </ul>
 
         <div className="mt-6">
-          <Link
-            href={`/dashboard/${track}/timed/start`}
-            className="inline-block rounded border px-4 py-2"
-          >
-            Start Timed Test
-          </Link>
+          <StartTimedTestButton
+            track={track}
+            questions={questions}
+            durationSeconds={30 * 60}
+          />
         </div>
       </section>
     </div>

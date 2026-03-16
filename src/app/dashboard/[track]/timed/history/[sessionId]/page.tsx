@@ -76,8 +76,8 @@ export default async function TimedSessionPage({ params }: PageProps) {
               <p
                 className={
                   attempt.result?.isCorrect
-                    ? "text-green-700 font-semibold"
-                    : "text-amber-700 font-semibold"
+                    ? "font-semibold text-green-700"
+                    : "font-semibold text-amber-700"
                 }
               >
                 {attempt.result?.isCorrect ? "Correct" : "Needs work"} —{" "}
@@ -100,8 +100,8 @@ export default async function TimedSessionPage({ params }: PageProps) {
                 </p>
 
                 <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
-                  {attempt.result.missing.map((item: string) => (
-                    <li key={item}>{item}</li>
+                  {attempt.result.missing.map((item: string, itemIndex: number) => (
+                    <li key={`${item}-${itemIndex}`}>{item}</li>
                   ))}
                 </ul>
               </div>
@@ -114,9 +114,11 @@ export default async function TimedSessionPage({ params }: PageProps) {
                 </p>
 
                 <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
-                  {attempt.result.forbiddenMatched.map((item: string) => (
-                    <li key={item}>{item}</li>
-                  ))}
+                  {attempt.result.forbiddenMatched.map(
+                    (item: string, itemIndex: number) => (
+                      <li key={`${item}-${itemIndex}`}>{item}</li>
+                    )
+                  )}
                 </ul>
               </div>
             )}
@@ -128,9 +130,11 @@ export default async function TimedSessionPage({ params }: PageProps) {
                 </p>
 
                 <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
-                  {attempt.result.unexpectedColumns.map((item: string) => (
-                    <li key={item}>{item}</li>
-                  ))}
+                  {attempt.result.unexpectedColumns.map(
+                    (item: string, itemIndex: number) => (
+                      <li key={`${item}-${itemIndex}`}>{item}</li>
+                    )
+                  )}
                 </ul>
               </div>
             )}

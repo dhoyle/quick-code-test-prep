@@ -1,0 +1,57 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { startTimedTest } from "@/actions/start-timed-test";
+import { useState, useTransition } from "react";
+
+type Props = {
+  track: string;
+  activeSessionId: string | null;
+};
+
+export default function StartTimedTestButton({
+  track,
+  activeSessionId,
+}: Props) {
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function handleClick() {
+    setError(null);
+
+    startTransition(async () => {
+      if (activeSessionId) {
+        router.push(`/dashboard/${track}/timed/start/${activeSessionId}`);
+        return;
+      }
+
+      const result = await startTimedTest(track);
+
+      if (!result.ok || !result.sessionId) {
+        setError(result.error ?? "Failed to start timed test.");
+        return;
+      }
+
+      router.push(`/dashboard/${track}/timed/start/${result.sessionId}`);
+    });
+  }
+
+  return (
+    <div>
+      <button
+        onClick={handleClick}
+        disabled={isPending}
+        className="inline-block rounded border px-4 py-2"
+      >
+        {isPending
+          ? "Starting..."
+          : activeSessionId
+          ? "Resume Timed Test"
+          : "Start Timed Test"}
+      </button>
+
+      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+    </div>
+  );
+}
