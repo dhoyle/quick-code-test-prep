@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { TrackQuestion } from "@/lib/question-types";
 
 type Track = {
   id: string;
@@ -19,16 +20,6 @@ type Lesson = {
   track_id: string;
 };
 
-type WarmupQuestion = {
-  slug: string;
-  title: string;
-  promptText: string;
-  expectedIncludes: string[];
-  forbiddenIncludes?: string[];
-  acceptedPatterns?: string[];
-  expectedColumns?: string[];
-};
-
 type WarmupProgressMap = Record<
   string,
   {
@@ -41,7 +32,7 @@ type Props = {
   track: string;
   trackTitle: string;
   lessons: Lesson[];
-  warmupQuestions: WarmupQuestion[];
+  warmupQuestions: TrackQuestion[];
   warmupProgress: WarmupProgressMap;
   bestTimedScore: number | null;
   otherTracks: Track[];
@@ -129,7 +120,7 @@ export default function TrackSidebarClient({
             </p>
 
             {warmupQuestions.length > 0 && (
-              <ul className="mt-2 ml-4 space-y-1">
+              <ul className="ml-4 mt-2 space-y-1">
                 {warmupQuestions.map((question, index) => {
                   const href = `/dashboard/${track}/warmup/${question.slug}`;
                   const isActive = pathname === href;

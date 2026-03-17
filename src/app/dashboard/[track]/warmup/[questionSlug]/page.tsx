@@ -5,7 +5,7 @@ import { getTrackBySlug } from "@/db/tracks";
 import { getRecentAttempts } from "@/db/attempts";
 import WarmupQuestion from "@/components/warmup/warmup-question";
 import AttemptHistory from "@/components/attempts/attempt-history";
-import { SQL_WARMUP_QUESTIONS } from "@/data/warmup-questions";
+import { getWarmupQuestionsForTrack } from "@/data/question-bank";
 
 type PageProps = {
   params: Promise<{
@@ -33,7 +33,7 @@ export default async function WarmupQuestionPage({ params }: PageProps) {
     notFound();
   }
 
-  const questions = track === "sql" ? SQL_WARMUP_QUESTIONS : [];
+  const questions = getWarmupQuestionsForTrack(track);
   const questionIndex = questions.findIndex((q) => q.slug === questionSlug);
 
   if (questionIndex === -1) {
@@ -51,7 +51,7 @@ export default async function WarmupQuestionPage({ params }: PageProps) {
     <div>
       <p>
         <Link href={`/dashboard/${track}/warmup`} className="underline">
-          Back to Warmup
+          Back to Warmup Tests
         </Link>
       </p>
 
@@ -66,12 +66,7 @@ export default async function WarmupQuestionPage({ params }: PageProps) {
       <WarmupQuestion
         track={track}
         questionSlug={questionSlug}
-        promptTitle={question.title}
-        promptText={question.promptText}
-        expectedIncludes={question.expectedIncludes}
-        forbiddenIncludes={question.forbiddenIncludes}
-        acceptedPatterns={question.acceptedPatterns}
-        expectedColumns={question.expectedColumns}
+        question={question}
       />
 
       <AttemptHistory

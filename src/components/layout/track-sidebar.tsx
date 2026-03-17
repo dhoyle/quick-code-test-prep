@@ -4,7 +4,7 @@ import { getLessonsByTrackSlug } from "@/db/lessons";
 import { getWarmupProgress } from "@/db/warmup-progress";
 import { getBestTimedScore } from "@/db/timed-progress";
 import TrackSidebarClient from "@/components/layout/track-sidebar-client";
-import { SQL_WARMUP_QUESTIONS } from "@/data/warmup-questions";
+import { getWarmupQuestionsForTrack } from "@/data/question-bank";
 
 type Props = {
   track: string;
@@ -30,17 +30,15 @@ export default async function TrackSidebar({ track }: Props) {
   }
 
   const otherTracks = allTracks.filter((t) => t.slug !== track);
-  const warmupQuestions = track === "sql" ? SQL_WARMUP_QUESTIONS : [];
+  const warmupQuestions = getWarmupQuestionsForTrack(track);
 
-  const warmupProgress =
-    user && track === "sql"
-      ? await getWarmupProgress(user.id, trackData.id)
-      : {};
+  const warmupProgress = user
+    ? await getWarmupProgress(user.id, trackData.id)
+    : {};
 
-  const bestTimedScore =
-    user && track === "sql"
-      ? await getBestTimedScore(user.id, trackData.id)
-      : null;
+  const bestTimedScore = user
+    ? await getBestTimedScore(user.id, trackData.id)
+    : null;
 
   return (
     <TrackSidebarClient

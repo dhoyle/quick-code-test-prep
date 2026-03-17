@@ -1,11 +1,6 @@
-export type SqlCheckResult = {
-  isCorrect: boolean;
-  score: number;
-  matched: string[];
-  missing: string[];
-  forbiddenMatched: string[];
-  unexpectedColumns: string[];
-};
+import type { TrackCheckResult } from "@/lib/question-types";
+
+export type SqlCheckResult = TrackCheckResult;
 
 function normalizeSql(input: string) {
   return input

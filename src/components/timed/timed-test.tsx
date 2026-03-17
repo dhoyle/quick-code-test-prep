@@ -1,23 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { checkSqlAttempt } from "@/lib/sql-checker";
+import { checkTrackAttempt } from "@/lib/track-checker";
 import { saveTimedTest } from "@/actions/save-timed-test";
-
-type TimedQuestion = {
-  slug: string;
-  title: string;
-  promptText: string;
-  expectedIncludes: string[];
-  forbiddenIncludes?: string[];
-  acceptedPatterns?: string[];
-  expectedColumns?: string[];
-};
+import type { TrackQuestion } from "@/lib/question-types";
 
 type Props = {
   track: string;
   sessionId: string;
-  questions: TimedQuestion[];
+  questions: TrackQuestion[];
   durationSeconds?: number;
   startedAt?: string | null;
 };
@@ -38,7 +29,10 @@ function getDraftStorageKey(sessionId: string) {
   return `timed-test-draft:${sessionId}`;
 }
 
-function getRemainingSeconds(durationSeconds: number, startedAt?: string | null) {
+function getRemainingSeconds(
+  durationSeconds: number,
+  startedAt?: string | null
+) {
   if (!startedAt) {
     return durationSeconds;
   }
@@ -51,6 +45,16 @@ function getRemainingSeconds(durationSeconds: number, startedAt?: string | null)
 
   const elapsedSeconds = Math.floor((Date.now() - startedAtMs) / 1000);
   return Math.max(0, durationSeconds - elapsedSeconds);
+}
+
+function getTrackLabel(track: string) {
+  return track === "python" ? "Python" : "SQL";
+}
+
+function getPlaceholder(track: string) {
+  return track === "python"
+    ? "Write your Python function here..."
+    : "Write your SQL query here...";
 }
 
 export default function TimedTest({
@@ -144,12 +148,10 @@ export default function TimedTest({
     const graded = questions.map((question) => {
       const answer = answers[question.slug] ?? "";
 
-      const result = checkSqlAttempt({
+      const result = checkTrackAttempt({
+        track,
         userAnswer: answer,
-        expectedIncludes: question.expectedIncludes,
-        forbiddenIncludes: question.forbiddenIncludes,
-        acceptedPatterns: question.acceptedPatterns,
-        expectedColumns: question.expectedColumns,
+        question,
       });
 
       return {
@@ -161,7 +163,7 @@ export default function TimedTest({
         isCorrect: result.isCorrect,
         missing: result.missing,
         forbiddenMatched: result.forbiddenMatched,
-        unexpectedColumns: result.unexpectedColumns,
+        unexpectedColumns: result.unexpectedColumns ?? [],
       };
     });
 
@@ -307,7 +309,9 @@ export default function TimedTest({
     <section className="mt-8 space-y-6">
       <div className="sticky top-0 z-10 rounded border bg-white p-4">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-xl font-semibold">Timed SQL Test</h2>
+          <h2 className="text-xl font-semibold">
+            Timed {getTrackLabel(track)} Test
+          </h2>
           <p className="font-mono text-lg" suppressHydrationWarning>
             {String(minutes).padStart(2, "0")}:
             {String(seconds).padStart(2, "0")}
@@ -334,7 +338,7 @@ export default function TimedTest({
               onChange={(e) =>
                 handleAnswerChange(question.slug, e.target.value)
               }
-              placeholder="Write your SQL query here..."
+              placeholder={getPlaceholder(track)}
             />
           </div>
         ))}
@@ -343,7 +347,7 @@ export default function TimedTest({
       <button
         type="button"
         onClick={() => void handleSubmit()}
-        className="inline-flex items-center justify-center rounded border px-4 py-2 text-sm font-medium transition cursor-pointer hover:bg-gray-100 active:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="inline-flex cursor-pointer items-center justify-center rounded border px-4 py-2 text-sm font-medium transition hover:bg-gray-100 active:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
       >
         Submit Timed Test
       </button>

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getTrackBySlug } from "@/db/tracks";
-import { SQL_WARMUP_QUESTIONS } from "@/data/warmup-questions";
+import { getWarmupQuestionsForTrack } from "@/data/question-bank";
 
 type PageProps = {
   params: Promise<{ track: string }>;
@@ -27,7 +27,7 @@ export default async function WarmupPage({ params }: PageProps) {
     notFound();
   }
 
-  const questions = track === "sql" ? SQL_WARMUP_QUESTIONS : [];
+  const questions = getWarmupQuestionsForTrack(track);
 
   return (
     <div>
@@ -37,7 +37,9 @@ export default async function WarmupPage({ params }: PageProps) {
         </Link>
       </p>
 
-      <h1 className="mt-4 text-2xl font-bold">{trackData.title} — Warmup Test</h1>
+      <h1 className="mt-4 text-2xl font-bold">
+        {trackData.title} — Warmup Tests
+      </h1>
 
       <p className="mt-2 text-gray-600">
         Untimed practice questions to help you build confidence before a real

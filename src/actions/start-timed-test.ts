@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { SQL_WARMUP_QUESTIONS } from "@/data/warmup-questions";
+import { getTimedQuestionsForTrack } from "@/data/question-bank";
 
 function shuffleArray<T>(items: T[]): T[] {
   const copy = [...items];
@@ -92,8 +92,7 @@ export async function startTimedTest(trackSlug: string) {
     }
   }
 
-  const questions =
-    trackSlug === "sql" ? shuffleArray(SQL_WARMUP_QUESTIONS).slice(0, 5) : [];
+  const questions = shuffleArray(getTimedQuestionsForTrack(trackSlug)).slice(0, 5);
 
   const sessionId = createSessionId();
 

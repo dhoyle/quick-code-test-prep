@@ -2,20 +2,18 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getTrackBySlug } from "@/db/tracks";
-import { getTimedSessionBySlug } from "@/db/timed-session";
-import TimedTestSession from "@/components/timed/timed-test-session";
+import TimedTest from "@/components/timed/timed-test";
+import { getTimedQuestionsForTrack } from "@/data/question-bank";
 
 type PageProps = {
-  params: Promise<{
-    track: string;
-    sessionSlug: string;
-  }>;
+  params: Promise<{ track: string; sessionId: string }>;
 };
 
-export default async function TimedSessionPage({ params }: PageProps) {
-  const { track, sessionSlug } = await params;
+export default async function TimedStartPage({ params }: PageProps) {
+  const { track, sessionId } = await params;
 
   const supabase = await createClient();
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -30,11 +28,29 @@ export default async function TimedSessionPage({ params }: PageProps) {
     notFound();
   }
 
-  const session = await getTimedSessionBySlug(user.id, sessionSlug);
+  const { data: session, error } = await supabase
+    .from("timed_sessions")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("track_id", trackData.id)
+    .eq("session_id", sessionId)
+    .single();
 
-  if (!session || session.track_id !== trackData.id) {
+  if (error || !session) {
     notFound();
   }
+
+  const questionSlugs = Array.isArray(session.question_slugs)
+    ? session.question_slugs
+    : [];
+
+  const questionMap = new Map(
+    getTimedQuestionsForTrack(track).map((q) => [q.slug, q])
+  );
+
+  const questions = questionSlugs
+    .map((slug) => questionMap.get(String(slug)))
+    .filter(Boolean);
 
   return (
     <div>
@@ -44,16 +60,16 @@ export default async function TimedSessionPage({ params }: PageProps) {
         </Link>
       </p>
 
-      <h1 className="mt-4 text-2xl font-bold">{trackData.title} — Timed Test</h1>
+      <h1 className="mt-4 text-2xl font-bold">
+        {trackData.title} — Timed Test
+      </h1>
 
-      <TimedTestSession
+      <TimedTest
         track={track}
-        sessionSlug={sessionSlug}
-        questions={session.questions}
-        initialAnswers={session.answers ?? {}}
+        sessionId={sessionId}
+        questions={questions}
         durationSeconds={session.duration_seconds}
         startedAt={session.started_at}
-        isSubmitted={session.is_submitted}
       />
     </div>
   );
