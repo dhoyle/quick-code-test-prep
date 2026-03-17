@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getTrackBySlug } from "@/db/tracks";
 import { getTimedSessions } from "@/db/timed-sessions";
+import ClearTimedHistoryButton from "@/components/timed/clear-timed-history-button";
 
 type PageProps = {
   params: Promise<{ track: string }>;
@@ -38,6 +39,12 @@ export default async function TimedHistoryPage({ params }: PageProps) {
       </p>
 
       <h1 className="mt-4 text-2xl font-bold">Timed Test History</h1>
+
+      {sessions.length > 0 && (
+        <div className="mt-4">
+          <ClearTimedHistoryButton track={track} />
+        </div>
+      )}
 
       {sessions.length === 0 && (
         <p className="mt-4 text-gray-600">

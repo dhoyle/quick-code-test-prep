@@ -107,7 +107,7 @@ export default function WarmupQuestion({
         <button
           type="submit"
           disabled={isPending}
-          className="rounded border px-4 py-2"
+          className="inline-flex items-center justify-center rounded border px-4 py-2 text-sm font-medium transition cursor-pointer hover:bg-gray-100 active:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isPending ? "Submitting..." : "Submit Attempt"}
         </button>
@@ -140,8 +140,8 @@ export default function WarmupQuestion({
                 Missing elements
               </p>
               <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
-                {checkResult.missing.map((item) => (
-                  <li key={item}>{item}</li>
+                {checkResult.missing.map((item, itemIndex) => (
+                  <li key={`missing-${item}-${itemIndex}`}>{item}</li>
                 ))}
               </ul>
             </div>
@@ -153,8 +153,8 @@ export default function WarmupQuestion({
                 Problematic elements
               </p>
               <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
-                {checkResult.forbiddenMatched.map((item) => (
-                  <li key={item}>{item}</li>
+                {checkResult.forbiddenMatched.map((item, itemIndex) => (
+                  <li key={`forbidden-${item}-${itemIndex}`}>{item}</li>
                 ))}
               </ul>
             </div>
@@ -166,8 +166,8 @@ export default function WarmupQuestion({
                 Unexpected columns
               </p>
               <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
-                {checkResult.unexpectedColumns.map((column) => (
-                  <li key={column}>{column}</li>
+                {checkResult.unexpectedColumns.map((column, itemIndex) => (
+                  <li key={`unexpected-${column}-${itemIndex}`}>{column}</li>
                 ))}
               </ul>
             </div>

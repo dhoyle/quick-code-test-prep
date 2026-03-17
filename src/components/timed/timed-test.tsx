@@ -60,7 +60,6 @@ export default function TimedTest({
   durationSeconds = 30 * 60,
   startedAt,
 }: Props) {
-  // Start from a deterministic value for SSR/CSR match.
   const [timeLeft, setTimeLeft] = useState(durationSeconds);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -70,7 +69,6 @@ export default function TimedTest({
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [timerInitialized, setTimerInitialized] = useState(false);
 
-  // Load saved draft answers first.
   useEffect(() => {
     try {
       const savedDraft = window.localStorage.getItem(
@@ -91,8 +89,6 @@ export default function TimedTest({
     }
   }, [sessionId]);
 
-  // Only save after the initial draft load has completed,
-  // so we do not overwrite an existing draft with {} on mount.
   useEffect(() => {
     if (!draftLoaded || isSubmitted) return;
 
@@ -106,7 +102,6 @@ export default function TimedTest({
     }
   }, [answers, draftLoaded, isSubmitted, sessionId]);
 
-  // Initialize timer on the client after hydration to avoid SSR/CSR mismatch.
   useEffect(() => {
     setTimeLeft(getRemainingSeconds(durationSeconds, startedAt));
     setTimerInitialized(true);
@@ -348,7 +343,7 @@ export default function TimedTest({
       <button
         type="button"
         onClick={() => void handleSubmit()}
-        className="rounded border px-4 py-2"
+        className="inline-flex items-center justify-center rounded border px-4 py-2 text-sm font-medium transition cursor-pointer hover:bg-gray-100 active:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         Submit Timed Test
       </button>
