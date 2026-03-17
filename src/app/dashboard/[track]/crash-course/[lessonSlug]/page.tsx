@@ -19,6 +19,23 @@ type PageProps = {
   }>;
 };
 
+const SQL_LESSON_TO_WARMUP_SLUG: Record<string, string> = {
+  "select-basics": "basic-select",
+  "where-filtering": "where-filter",
+  distinct: "distinct-departments",
+  "order-by": "order-by-scores",
+  limit: "top-five-users",
+  "null-handling": "null-emails",
+  between: "between-salaries",
+  "in-operator": "in-departments",
+  "aggregate-functions": "count-users",
+  "group-by": "group-by-department",
+  having: "having-departments",
+  "inner-join": "inner-join-orders",
+  "left-join": "left-join-orders",
+  "case-when": "case-age-group",
+};
+
 async function getLessonMarkdown(track: string, lessonSlug: string) {
   const filePath = path.join(
     process.cwd(),
@@ -34,6 +51,18 @@ async function getLessonMarkdown(track: string, lessonSlug: string) {
   } catch {
     return null;
   }
+}
+
+function getWarmupHref(track: string, lessonSlug: string) {
+  if (track === "sql") {
+    const warmupSlug = SQL_LESSON_TO_WARMUP_SLUG[lessonSlug];
+
+    if (warmupSlug) {
+      return `/dashboard/${track}/warmup/${warmupSlug}`;
+    }
+  }
+
+  return `/dashboard/${track}/warmup`;
 }
 
 export default async function LessonPage({ params }: PageProps) {
@@ -66,12 +95,10 @@ export default async function LessonPage({ params }: PageProps) {
     lesson.lesson_order
   );
 
-  const nextLesson = await getNextLesson(
-    lesson.track_id,
-    lesson.lesson_order
-  );
+  const nextLesson = await getNextLesson(lesson.track_id, lesson.lesson_order);
 
   const lessonCount = await getLessonCount(lesson.track_id);
+  const warmupHref = getWarmupHref(track, lessonSlug);
 
   return (
     <div>
@@ -120,7 +147,7 @@ export default async function LessonPage({ params }: PageProps) {
       </section>
 
       <section className="mt-6">
-        <Link href={`/dashboard/${track}/warmup`} className="underline">
+        <Link href={warmupHref} className="underline">
           Try Warmup Practice
         </Link>
       </section>

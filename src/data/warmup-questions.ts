@@ -46,7 +46,7 @@ export const SQL_WARMUP_QUESTIONS: WarmupQuestion[] = [
   },
   {
     slug: "top-five-users",
-    title: "Top 5 Users",
+    title: "LIMIT Top 5 Users",
     promptText:
       "Write a SQL query that returns the top 5 users from the leaderboard table by score.",
     expectedIncludes: [
