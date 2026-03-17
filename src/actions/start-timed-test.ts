@@ -18,6 +18,24 @@ function createSessionId() {
   return `timed_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
+function isSessionStillActive(session: {
+  started_at: string | null;
+  duration_seconds: number | null;
+}) {
+  if (!session.started_at || !session.duration_seconds) {
+    return false;
+  }
+
+  const startedAtMs = new Date(session.started_at).getTime();
+
+  if (Number.isNaN(startedAtMs)) {
+    return false;
+  }
+
+  const expiresAtMs = startedAtMs + session.duration_seconds * 1000;
+  return Date.now() < expiresAtMs;
+}
+
 export async function startTimedTest(trackSlug: string) {
   const supabase = await createClient();
 
@@ -54,11 +72,24 @@ export async function startTimedTest(trackSlug: string) {
   }
 
   if (existing) {
-    return {
-      ok: true,
-      sessionId: existing.session_id,
-      alreadyExisted: true,
-    };
+    if (isSessionStillActive(existing)) {
+      return {
+        ok: true,
+        sessionId: existing.session_id,
+        alreadyExisted: true,
+      };
+    }
+
+    const { error: expireError } = await supabase
+      .from("timed_sessions")
+      .update({ status: "completed" })
+      .eq("user_id", user.id)
+      .eq("track_id", track.id)
+      .eq("session_id", existing.session_id);
+
+    if (expireError) {
+      return { ok: false, error: expireError.message };
+    }
   }
 
   const questions =

@@ -16,8 +16,10 @@ type TimedQuestion = {
 
 type Props = {
   track: string;
+  sessionId: string;
   questions: TimedQuestion[];
   durationSeconds?: number;
+  startedAt?: string | null;
 };
 
 type PerQuestionResult = {
@@ -32,44 +34,109 @@ type PerQuestionResult = {
   unexpectedColumns: string[];
 };
 
-function createSessionId() {
-  return `timed_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+function getDraftStorageKey(sessionId: string) {
+  return `timed-test-draft:${sessionId}`;
+}
+
+function getRemainingSeconds(durationSeconds: number, startedAt?: string | null) {
+  if (!startedAt) {
+    return durationSeconds;
+  }
+
+  const startedAtMs = new Date(startedAt).getTime();
+
+  if (Number.isNaN(startedAtMs)) {
+    return durationSeconds;
+  }
+
+  const elapsedSeconds = Math.floor((Date.now() - startedAtMs) / 1000);
+  return Math.max(0, durationSeconds - elapsedSeconds);
 }
 
 export default function TimedTest({
   track,
+  sessionId,
   questions,
   durationSeconds = 30 * 60,
+  startedAt,
 }: Props) {
+  // Start from a deterministic value for SSR/CSR match.
   const [timeLeft, setTimeLeft] = useState(durationSeconds);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [results, setResults] = useState<PerQuestionResult[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [draftLoaded, setDraftLoaded] = useState(false);
+  const [timerInitialized, setTimerInitialized] = useState(false);
+
+  // Load saved draft answers first.
+  useEffect(() => {
+    try {
+      const savedDraft = window.localStorage.getItem(
+        getDraftStorageKey(sessionId)
+      );
+
+      if (savedDraft) {
+        const parsed = JSON.parse(savedDraft);
+
+        if (parsed && typeof parsed === "object") {
+          setAnswers(parsed as Record<string, string>);
+        }
+      }
+    } catch {
+      // Ignore malformed local draft data.
+    } finally {
+      setDraftLoaded(true);
+    }
+  }, [sessionId]);
+
+  // Only save after the initial draft load has completed,
+  // so we do not overwrite an existing draft with {} on mount.
+  useEffect(() => {
+    if (!draftLoaded || isSubmitted) return;
+
+    try {
+      window.localStorage.setItem(
+        getDraftStorageKey(sessionId),
+        JSON.stringify(answers)
+      );
+    } catch {
+      // Ignore localStorage write failures.
+    }
+  }, [answers, draftLoaded, isSubmitted, sessionId]);
+
+  // Initialize timer on the client after hydration to avoid SSR/CSR mismatch.
+  useEffect(() => {
+    setTimeLeft(getRemainingSeconds(durationSeconds, startedAt));
+    setTimerInitialized(true);
+  }, [durationSeconds, startedAt]);
 
   useEffect(() => {
-    if (isSubmitted) return;
+    if (!timerInitialized || isSubmitted || timeLeft <= 0) return;
 
-    const timer = setInterval(() => {
+    const timer = window.setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
-          clearInterval(timer);
+          window.clearInterval(timer);
           return 0;
         }
+
         return prev - 1;
       });
     }, 1000);
 
-    return () => clearInterval(timer);
-  }, [isSubmitted]);
+    return () => window.clearInterval(timer);
+  }, [isSubmitted, timeLeft, timerInitialized]);
 
   useEffect(() => {
+    if (!timerInitialized) return;
+
     if (timeLeft === 0 && !isSubmitted) {
       void handleSubmit();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeLeft, isSubmitted]);
+  }, [timeLeft, isSubmitted, timerInitialized]);
 
   function handleAnswerChange(slug: string, value: string) {
     setAnswers((prev) => ({
@@ -105,11 +172,8 @@ export default function TimedTest({
 
     setResults(graded);
     setIsSubmitted(true);
-
     setIsSaving(true);
     setSaveMessage(null);
-
-    const sessionId = createSessionId();
 
     const saveResult = await saveTimedTest({
       trackSlug: track,
@@ -130,6 +194,12 @@ export default function TimedTest({
     });
 
     if (saveResult.ok) {
+      try {
+        window.localStorage.removeItem(getDraftStorageKey(sessionId));
+      } catch {
+        // Ignore localStorage remove failures.
+      }
+
       setSaveMessage("Timed test saved");
     } else {
       setSaveMessage(saveResult.error ?? "Failed to save timed test");
@@ -189,8 +259,10 @@ export default function TimedTest({
                     Missing elements
                   </p>
                   <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
-                    {result.missing.map((item) => (
-                      <li key={item}>{item}</li>
+                    {result.missing.map((item, itemIndex) => (
+                      <li key={`${result.slug}-missing-${item}-${itemIndex}`}>
+                        {item}
+                      </li>
                     ))}
                   </ul>
                 </div>
@@ -202,8 +274,12 @@ export default function TimedTest({
                     Problematic elements
                   </p>
                   <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
-                    {result.forbiddenMatched.map((item) => (
-                      <li key={item}>{item}</li>
+                    {result.forbiddenMatched.map((item, itemIndex) => (
+                      <li
+                        key={`${result.slug}-forbidden-${item}-${itemIndex}`}
+                      >
+                        {item}
+                      </li>
                     ))}
                   </ul>
                 </div>
@@ -215,8 +291,12 @@ export default function TimedTest({
                     Unexpected columns
                   </p>
                   <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
-                    {result.unexpectedColumns.map((item) => (
-                      <li key={item}>{item}</li>
+                    {result.unexpectedColumns.map((item, itemIndex) => (
+                      <li
+                        key={`${result.slug}-unexpected-${item}-${itemIndex}`}
+                      >
+                        {item}
+                      </li>
                     ))}
                   </ul>
                 </div>
@@ -233,7 +313,7 @@ export default function TimedTest({
       <div className="sticky top-0 z-10 rounded border bg-white p-4">
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-xl font-semibold">Timed SQL Test</h2>
-          <p className="font-mono text-lg">
+          <p className="font-mono text-lg" suppressHydrationWarning>
             {String(minutes).padStart(2, "0")}:
             {String(seconds).padStart(2, "0")}
           </p>
