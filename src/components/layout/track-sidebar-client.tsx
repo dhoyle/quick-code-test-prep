@@ -125,7 +125,7 @@ export default function TrackSidebarClient({
 
           <div className="mt-2">
             <p className="px-2 text-sm font-semibold text-gray-500">
-              Warmup Test
+              Warmup Tests
             </p>
 
             {warmupQuestions.length > 0 && (

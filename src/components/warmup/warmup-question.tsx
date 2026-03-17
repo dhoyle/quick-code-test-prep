@@ -53,9 +53,13 @@ export default function WarmupQuestion({
   const [error, setError] = useState<string | null>(null);
   const [checkResult, setCheckResult] = useState<SqlCheckResult | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
+    if (isSubmitted) return;
+
     setMessage(null);
     setError(null);
     setCheckResult(null);
@@ -88,6 +92,7 @@ export default function WarmupQuestion({
       }
 
       setMessage("Attempt submitted");
+      setIsSubmitted(true);
       router.refresh();
     });
   }
@@ -102,14 +107,19 @@ export default function WarmupQuestion({
           value={answer}
           onChange={(e) => setAnswer(e.target.value)}
           placeholder="Write your SQL query here..."
+          disabled={isSubmitted}
         />
 
         <button
           type="submit"
-          disabled={isPending}
+          disabled={isPending || isSubmitted}
           className="inline-flex items-center justify-center rounded border px-4 py-2 text-sm font-medium transition cursor-pointer hover:bg-gray-100 active:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isPending ? "Submitting..." : "Submit Attempt"}
+          {isPending
+            ? "Submitting..."
+            : isSubmitted
+              ? "Submitted"
+              : "Submit Attempt"}
         </button>
       </form>
 
@@ -167,7 +177,9 @@ export default function WarmupQuestion({
               </p>
               <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
                 {checkResult.unexpectedColumns.map((column, itemIndex) => (
-                  <li key={`unexpected-${column}-${itemIndex}`}>{column}</li>
+                  <li key={`unexpected-${column}-${itemIndex}`}>
+                    {column}
+                  </li>
                 ))}
               </ul>
             </div>
@@ -175,8 +187,12 @@ export default function WarmupQuestion({
 
           {coachingMessage && (
             <div className="mt-4 rounded border border-blue-200 bg-blue-50 p-3">
-              <p className="text-sm font-medium text-blue-900">Coaching tip</p>
-              <p className="mt-1 text-sm text-blue-800">{coachingMessage}</p>
+              <p className="text-sm font-medium text-blue-900">
+                Coaching tip
+              </p>
+              <p className="mt-1 text-sm text-blue-800">
+                {coachingMessage}
+              </p>
             </div>
           )}
         </div>
