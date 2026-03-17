@@ -142,6 +142,8 @@ export const SQL_WARMUP_QUESTIONS: WarmupQuestion[] = [
       "from users",
     ],
   },
+
+  // DISTINCT
   {
     slug: "distinct-departments",
     title: "DISTINCT Departments",
@@ -150,12 +152,30 @@ export const SQL_WARMUP_QUESTIONS: WarmupQuestion[] = [
     expectedIncludes: ["select", "distinct", "department", "from employees"],
   },
   {
+    slug: "distinct-cities",
+    title: "DISTINCT Cities",
+    promptText:
+      "Write a SQL query that returns the distinct city values from the users table.",
+    expectedIncludes: ["select", "distinct", "city", "from users"],
+  },
+
+  // NULL
+  {
     slug: "null-emails",
     title: "NULL Emails",
     promptText:
       "Write a SQL query that returns all users whose email is NULL.",
     expectedIncludes: ["select", "from users", "where", "email is null"],
   },
+  {
+    slug: "not-null-emails",
+    title: "NOT NULL Emails",
+    promptText:
+      "Write a SQL query that returns all users whose email is NOT NULL.",
+    expectedIncludes: ["select", "from users", "where", "email is not null"],
+  },
+
+  // BETWEEN
   {
     slug: "between-salaries",
     title: "BETWEEN Salaries",
@@ -169,6 +189,20 @@ export const SQL_WARMUP_QUESTIONS: WarmupQuestion[] = [
     ],
   },
   {
+    slug: "between-ages",
+    title: "BETWEEN Ages",
+    promptText:
+      "Write a SQL query that returns all users whose age is between 18 and 30.",
+    expectedIncludes: [
+      "select",
+      "from users",
+      "where",
+      "age between 18 and 30",
+    ],
+  },
+
+  // IN
+  {
     slug: "in-departments",
     title: "IN Departments",
     promptText:
@@ -180,6 +214,20 @@ export const SQL_WARMUP_QUESTIONS: WarmupQuestion[] = [
       "department in",
       "'sales'",
       "'marketing'",
+    ],
+  },
+  {
+    slug: "in-status",
+    title: "IN Status",
+    promptText:
+      "Write a SQL query that returns all orders whose status is either 'pending' or 'shipped'.",
+    expectedIncludes: [
+      "select",
+      "from orders",
+      "where",
+      "status in",
+      "'pending'",
+      "'shipped'",
     ],
   },
 ];
