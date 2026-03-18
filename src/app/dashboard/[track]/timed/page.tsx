@@ -8,6 +8,28 @@ type PageProps = {
   params: Promise<{ track: string }>;
 };
 
+function isSessionStillActive(session: {
+  started_at: string | null;
+  duration_seconds: number | null;
+}) {
+  if (!session.started_at || !session.duration_seconds) {
+    return false;
+  }
+
+  const startedAtMs = new Date(session.started_at).getTime();
+
+  if (Number.isNaN(startedAtMs)) {
+    return false;
+  }
+
+  const expiresAtMs = startedAtMs + session.duration_seconds * 1000;
+  return Date.now() < expiresAtMs;
+}
+
+function getTrackLabel(track: string) {
+  return track === "python" ? "Python" : "SQL";
+}
+
 export default async function TimedPage({ params }: PageProps) {
   const { track } = await params;
 
@@ -28,7 +50,7 @@ export default async function TimedPage({ params }: PageProps) {
 
   const { data: activeSession } = await supabase
     .from("timed_sessions")
-    .select("session_id")
+    .select("session_id, started_at, duration_seconds")
     .eq("user_id", user.id)
     .eq("track_id", trackData.id)
     .eq("status", "in_progress")
@@ -36,10 +58,20 @@ export default async function TimedPage({ params }: PageProps) {
     .limit(1)
     .maybeSingle();
 
-  const activeSessionId =
-    activeSession && typeof activeSession.session_id === "string"
-      ? activeSession.session_id
-      : null;
+  let activeSessionId: string | null = null;
+
+  if (activeSession && typeof activeSession.session_id === "string") {
+    if (isSessionStillActive(activeSession)) {
+      activeSessionId = activeSession.session_id;
+    } else {
+      await supabase
+        .from("timed_sessions")
+        .update({ status: "completed" })
+        .eq("user_id", user.id)
+        .eq("track_id", trackData.id)
+        .eq("session_id", activeSession.session_id);
+    }
+  }
 
   return (
     <div>
@@ -61,7 +93,7 @@ export default async function TimedPage({ params }: PageProps) {
         <h2 className="text-xl font-semibold">Ready to begin?</h2>
 
         <ul className="mt-4 space-y-2 text-sm text-gray-700">
-          <li>• 5 random SQL questions</li>
+          <li>• 5 random {getTrackLabel(track)} questions</li>
           <li>• 30 minute timer</li>
           <li>• Automatic grading when you submit</li>
           <li>• Results saved to your timed test history</li>

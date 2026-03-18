@@ -9,7 +9,7 @@ type PageProps = {
   params: Promise<{ track: string; sessionId: string }>;
 };
 
-export default async function TimedStartPage({ params }: PageProps) {
+export default async function TimedSessionPage({ params }: PageProps) {
   const { track, sessionId } = await params;
 
   const supabase = await createClient();
@@ -49,8 +49,12 @@ export default async function TimedStartPage({ params }: PageProps) {
   );
 
   const questions = questionSlugs
-    .map((slug) => questionMap.get(String(slug)))
-    .filter(Boolean);
+    .map((slug: unknown) => questionMap.get(String(slug)))
+    .filter(
+      (
+        q: ReturnType<typeof getTimedQuestionsForTrack>[number] | undefined
+      ): q is ReturnType<typeof getTimedQuestionsForTrack>[number] => q !== undefined
+    );
 
   return (
     <div>

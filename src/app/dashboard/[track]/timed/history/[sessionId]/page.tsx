@@ -34,6 +34,7 @@ export default async function TimedSessionPage({ params }: PageProps) {
     .select("*")
     .eq("user_id", user.id)
     .eq("track_id", trackData.id)
+    .eq("mode", "timed")
     .eq("session_id", sessionId)
     .order("created_at");
 
@@ -61,9 +62,7 @@ export default async function TimedSessionPage({ params }: PageProps) {
 
       <h1 className="mt-4 text-2xl font-bold">Timed Test Review</h1>
 
-      <p className="mt-2 text-gray-600">
-        Overall score: {overallScore}%
-      </p>
+      <p className="mt-2 text-gray-600">Overall score: {overallScore}%</p>
 
       <div className="mt-6 space-y-6">
         {attempts.map((attempt, index) => (
@@ -85,9 +84,7 @@ export default async function TimedSessionPage({ params }: PageProps) {
               </p>
             </div>
 
-            <p className="mt-3 text-sm text-gray-600">
-              {attempt.prompt_text}
-            </p>
+            <p className="mt-3 text-sm text-gray-600">{attempt.prompt_text}</p>
 
             <pre className="mt-3 whitespace-pre-wrap rounded bg-gray-50 p-3 font-mono text-sm">
               {attempt.user_answer || "(No answer submitted)"}
@@ -100,9 +97,11 @@ export default async function TimedSessionPage({ params }: PageProps) {
                 </p>
 
                 <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
-                  {attempt.result.missing.map((item: string, itemIndex: number) => (
-                    <li key={`${item}-${itemIndex}`}>{item}</li>
-                  ))}
+                  {attempt.result.missing.map(
+                    (item: string, itemIndex: number) => (
+                      <li key={`${item}-${itemIndex}`}>{item}</li>
+                    )
+                  )}
                 </ul>
               </div>
             )}
@@ -123,7 +122,7 @@ export default async function TimedSessionPage({ params }: PageProps) {
               </div>
             )}
 
-            {attempt.result?.unexpectedColumns?.length > 0 && (
+            {(attempt.result?.unexpectedColumns?.length ?? 0) > 0 && (
               <div className="mt-3">
                 <p className="text-sm font-medium text-gray-700">
                   Unexpected columns

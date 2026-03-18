@@ -3,11 +3,29 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getTrackBySlug } from "@/db/tracks";
 import TimedTest from "@/components/timed/timed-test";
-import { SQL_WARMUP_QUESTIONS } from "@/data/warmup-questions";
+import { getTimedQuestionsForTrack } from "@/data/question-bank";
 
 type PageProps = {
   params: Promise<{ track: string; sessionId: string }>;
 };
+
+function isSessionStillActive(session: {
+  started_at: string | null;
+  duration_seconds: number | null;
+}) {
+  if (!session.started_at || !session.duration_seconds) {
+    return false;
+  }
+
+  const startedAtMs = new Date(session.started_at).getTime();
+
+  if (Number.isNaN(startedAtMs)) {
+    return false;
+  }
+
+  const expiresAtMs = startedAtMs + session.duration_seconds * 1000;
+  return Date.now() < expiresAtMs;
+}
 
 export default async function TimedStartPage({ params }: PageProps) {
   const { track, sessionId } = await params;
@@ -40,14 +58,37 @@ export default async function TimedStartPage({ params }: PageProps) {
     notFound();
   }
 
+  if (session.status !== "in_progress") {
+    redirect(`/dashboard/${track}/timed/history/${sessionId}`);
+  }
+
+  if (!isSessionStillActive(session)) {
+    await supabase
+      .from("timed_sessions")
+      .update({ status: "completed" })
+      .eq("user_id", user.id)
+      .eq("track_id", trackData.id)
+      .eq("session_id", sessionId);
+
+    redirect(`/dashboard/${track}/timed/history/${sessionId}`);
+  }
+
   const questionSlugs = Array.isArray(session.question_slugs)
     ? session.question_slugs
     : [];
 
-  const questionMap = new Map(SQL_WARMUP_QUESTIONS.map((q) => [q.slug, q]));
+  const questionMap = new Map(
+    getTimedQuestionsForTrack(track).map((q) => [q.slug, q])
+  );
+
   const questions = questionSlugs
-    .map((slug) => questionMap.get(String(slug)))
-    .filter(Boolean);
+    .map((slug: unknown) => questionMap.get(String(slug)))
+    .filter(
+      (
+        q: ReturnType<typeof getTimedQuestionsForTrack>[number] | undefined
+      ): q is ReturnType<typeof getTimedQuestionsForTrack>[number] =>
+        q !== undefined
+    );
 
   return (
     <div>

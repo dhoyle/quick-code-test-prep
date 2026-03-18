@@ -1,47 +1,100 @@
 import { createClient } from "@/lib/supabase/server";
 
-export async function getTimedSessions(userId: string, trackId: string) {
+type AttemptResult = {
+  isCorrect?: boolean;
+  score?: number;
+  missing?: string[];
+  forbiddenMatched?: string[];
+  unexpectedColumns?: string[];
+} | null;
+
+type TimedAttemptRow = {
+  id: string;
+  session_id: string | null;
+  prompt_title: string;
+  result: AttemptResult;
+  created_at: string;
+};
+
+type TimedSessionRow = {
+  session_id: string | null;
+  started_at: string;
+  overall_score: number | null;
+};
+
+export type TimedSessionSummary = {
+  sessionId: string;
+  createdAt: string;
+  overallScore: number;
+  attempts: Array<{
+    id: string;
+    prompt_title: string;
+    result: AttemptResult;
+    created_at: string;
+  }>;
+};
+
+export async function getTimedSessions(
+  userId: string,
+  trackId: string
+): Promise<TimedSessionSummary[]> {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  const { data: sessionData, error: sessionError } = await supabase
+    .from("timed_sessions")
+    .select("session_id, started_at, overall_score")
+    .eq("user_id", userId)
+    .eq("track_id", trackId)
+    .eq("status", "completed")
+    .order("started_at", { ascending: false });
+
+  if (sessionError) {
+    throw new Error(`Failed to load timed sessions: ${sessionError.message}`);
+  }
+
+  const sessions = (sessionData ?? []) as TimedSessionRow[];
+
+  const validSessions = sessions.filter(
+    (row): row is TimedSessionRow & { session_id: string } =>
+      typeof row.session_id === "string" && row.session_id.length > 0
+  );
+
+  if (validSessions.length === 0) {
+    return [];
+  }
+
+  const sessionIds = validSessions.map((row) => row.session_id);
+
+  const { data: attemptData, error: attemptError } = await supabase
     .from("attempts")
-    .select("*")
+    .select("id, session_id, prompt_title, result, created_at")
     .eq("user_id", userId)
     .eq("track_id", trackId)
     .eq("mode", "timed")
-    .order("created_at", { ascending: false });
+    .in("session_id", sessionIds)
+    .order("created_at", { ascending: true });
 
-  if (error) {
-    throw new Error(error.message);
+  if (attemptError) {
+    throw new Error(`Failed to load timed attempts: ${attemptError.message}`);
   }
 
-  const sessions: Record<string, any[]> = {};
+  const attempts = (attemptData ?? []) as TimedAttemptRow[];
 
-  for (const row of data ?? []) {
-    const sessionId = row.session_id;
+  const attemptsBySessionId = new Map<string, TimedAttemptRow[]>();
 
-    if (!sessionId) continue;
+  for (const attempt of attempts) {
+    if (!attempt.session_id) continue;
 
-    if (!sessions[sessionId]) {
-      sessions[sessionId] = [];
-    }
-
-    sessions[sessionId].push(row);
+    const existing = attemptsBySessionId.get(attempt.session_id) ?? [];
+    existing.push(attempt);
+    attemptsBySessionId.set(attempt.session_id, existing);
   }
 
-  return Object.entries(sessions).map(([sessionId, attempts]) => {
-    const scores = attempts.map((a) => a.result?.score ?? 0);
-
-    const overall =
-      scores.length > 0
-        ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
-        : 0;
-
-    return {
-      sessionId,
-      createdAt: attempts[0].created_at,
-      overallScore: overall,
-      attempts,
-    };
-  });
+  return validSessions.map((session) => ({
+    sessionId: session.session_id,
+    createdAt: session.started_at,
+    overallScore:
+      typeof session.overall_score === "number" ? session.overall_score : 0,
+    attempts: attemptsBySessionId.get(session.session_id) ?? [],
+  }));
 }
