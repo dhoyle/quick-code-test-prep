@@ -32,6 +32,47 @@ function dedupeStrings(values: string[]): string[] {
   return result;
 }
 
+function getVariableConsistencyMissing(question: PythonQuestion, normalized: string) {
+  const missing: string[] = [];
+
+  switch (question.slug) {
+    case "add-two-numbers":
+      if (!normalized.includes("a") || !normalized.includes("b")) {
+        missing.push("use parameters a and b in the returned expression");
+      }
+      break;
+
+    case "is-even":
+      if (!normalized.includes("n % 2")) {
+        missing.push("use parameter n in the even check");
+      }
+      break;
+
+    case "first-item":
+      if (!normalized.includes("items[0]")) {
+        missing.push("return items[0]");
+      }
+      break;
+
+    case "reverse-string":
+      if (!normalized.includes("text")) {
+        missing.push("use parameter text");
+      }
+      break;
+
+    case "contains-value":
+      if (!normalized.includes("target in items")) {
+        missing.push("check whether target is in items");
+      }
+      break;
+
+    default:
+      break;
+  }
+
+  return missing;
+}
+
 type CheckPythonAttemptInput = {
   userAnswer: string;
   question: PythonQuestion;
@@ -74,6 +115,7 @@ export function checkPythonAttempt({
     ...requiredTokens.filter(
       (token) => !normalized.includes(normalizePython(token))
     ),
+    ...getVariableConsistencyMissing(question, normalized),
   ]);
 
   const forbiddenMatched = dedupeStrings(
@@ -83,12 +125,17 @@ export function checkPythonAttempt({
   );
 
   const totalExpectedCount =
-    requiredTokens.length + (expectedFunctionName ? 1 : 0);
+    requiredTokens.length +
+    (expectedFunctionName ? 1 : 0) +
+    getVariableConsistencyMissing(question, normalized).length;
 
   const baseScore =
     totalExpectedCount === 0
       ? 0
-      : Math.round((matched.length / totalExpectedCount) * 100);
+      : Math.round(
+          (Math.max(0, totalExpectedCount - missing.length) / totalExpectedCount) *
+            100
+        );
 
   let score = baseScore;
 
@@ -101,7 +148,7 @@ export function checkPythonAttempt({
   }
 
   const isCorrect =
-    (exactAccepted || missing.length === 0) && forbiddenMatched.length === 0;
+    exactAccepted || (missing.length === 0 && forbiddenMatched.length === 0);
 
   return {
     isCorrect,
