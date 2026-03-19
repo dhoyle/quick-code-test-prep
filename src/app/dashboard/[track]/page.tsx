@@ -68,7 +68,7 @@ export default async function TrackPage({ params }: PageProps) {
               href={`/dashboard/${track}/warmup`}
               className="block rounded border p-4 hover:bg-gray-50"
             >
-              <h3 className="text-lg font-semibold">Warmup Test</h3>
+              <h3 className="text-lg font-semibold">Warmup Tests</h3>
               <p className="mt-1 text-sm text-gray-600">
                 Untimed practice to build confidence before a real code test.
               </p>

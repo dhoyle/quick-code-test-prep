@@ -36,6 +36,16 @@ const SQL_LESSON_TO_WARMUP_SLUG: Record<string, string> = {
   "case-when": "case-age-group",
 };
 
+const PYTHON_LESSON_TO_WARMUP_SLUG: Record<string, string> = {
+  "variables-and-types": "add-two-numbers",
+  operators: "is-even",
+  indentation: "is-even",
+  conditionals: "is-even",
+  functions: "add-two-numbers",
+  "lists-and-loops": "filter-evens",
+  "common-patterns": "count-items",
+};
+
 async function getLessonMarkdown(track: string, lessonSlug: string) {
   const filePath = path.join(
     process.cwd(),
@@ -56,6 +66,14 @@ async function getLessonMarkdown(track: string, lessonSlug: string) {
 function getWarmupHref(track: string, lessonSlug: string) {
   if (track === "sql") {
     const warmupSlug = SQL_LESSON_TO_WARMUP_SLUG[lessonSlug];
+
+    if (warmupSlug) {
+      return `/dashboard/${track}/warmup/${warmupSlug}`;
+    }
+  }
+
+  if (track === "python") {
+    const warmupSlug = PYTHON_LESSON_TO_WARMUP_SLUG[lessonSlug];
 
     if (warmupSlug) {
       return `/dashboard/${track}/warmup/${warmupSlug}`;
@@ -113,8 +131,30 @@ export default async function LessonPage({ params }: PageProps) {
       </p>
 
       <section className="mt-8">
-        <div className="prose max-w-none">
-          <ReactMarkdown>{markdown}</ReactMarkdown>
+        <div className="prose max-w-none prose-code:before:content-none prose-code:after:content-none prose-code:font-normal prose-pre:bg-gray-900 prose-pre:text-white prose-pre:rounded prose-pre:px-4 prose-pre:py-3 prose-pre:overflow-x-auto">
+          <ReactMarkdown
+            components={{
+              code({ className, children, ...props }) {
+                const isBlock = className?.includes("language-");
+
+                if (isBlock) {
+                  return (
+                    <code className={className} {...props}>
+                      {children}
+                    </code>
+                  );
+                }
+
+                return (
+                  <code className="rounded bg-gray-100 px-1 py-0.5 font-mono text-sm font-normal">
+                    {children}
+                  </code>
+                );
+              },
+            }}
+          >
+            {markdown}
+          </ReactMarkdown>
         </div>
       </section>
 
