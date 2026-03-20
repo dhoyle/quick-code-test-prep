@@ -10,6 +10,26 @@ type PageProps = {
   }>;
 };
 
+function getTrackLabel(track: string) {
+  return track === "python" ? "Python" : "SQL";
+}
+
+function getTrackValueProp(track: string) {
+  if (track === "python") {
+    return "Practice beginner-friendly Python interview questions with instant feedback, warmup drills, and timed test practice.";
+  }
+
+  return "Practice common SQL interview questions with instant feedback, warmup drills, and timed test practice.";
+}
+
+function getSuggestedPath(track: string) {
+  if (track === "python") {
+    return "New to Python or need a refresher? Start with the crash course, then work through warmup tests before trying a timed session.";
+  }
+
+  return "Brush up on key SQL concepts, build confidence with warmup tests, and then simulate a real assessment with a timed test.";
+}
+
 export default async function TrackPage({ params }: PageProps) {
   const { track } = await params;
 
@@ -31,69 +51,116 @@ export default async function TrackPage({ params }: PageProps) {
   const lessons = await getLessonsByTrackSlug(track);
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold">{trackData.title}</h1>
-      <p className="mt-2 text-gray-600">
-        {trackData.description ?? "No description yet."}
-      </p>
-
-      <section className="mt-8">
-        <h2 className="text-xl font-semibold">Crash Course</h2>
-
-        <ul className="mt-4 space-y-3">
-          {lessons.map((lesson) => (
-            <li key={lesson.id}>
-              <Link
-                href={`/dashboard/${track}/crash-course/${lesson.slug}`}
-                className="block rounded border p-4 hover:bg-gray-50"
-              >
-                <h3 className="text-lg font-semibold">
-                  {lesson.lesson_order}. {lesson.title}
-                </h3>
-                <p className="mt-1 text-sm text-gray-600">
-                  {lesson.summary ?? "No summary yet."}
-                </p>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="mt-10">
-        <h2 className="text-xl font-semibold">Practice Tests</h2>
-
-        <ul className="mt-4 space-y-3">
-          <li>
-            <Link
-              href={`/dashboard/${track}/warmup`}
-              className="block rounded border p-4 hover:bg-gray-50"
-            >
-              <h3 className="text-lg font-semibold">Warmup Tests</h3>
-              <p className="mt-1 text-sm text-gray-600">
-                Untimed practice to build confidence before a real code test.
-              </p>
-            </Link>
-          </li>
-
-          <li>
-            <Link
-              href={`/dashboard/${track}/timed`}
-              className="block rounded border p-4 hover:bg-gray-50"
-            >
-              <h3 className="text-lg font-semibold">Timed Test</h3>
-              <p className="mt-1 text-sm text-gray-600">
-                Timed practice to simulate a real coding assessment.
-              </p>
-            </Link>
-          </li>
-        </ul>
-      </section>
-
-      <p className="mt-8">
+    <div className="max-w-5xl">
+      <p>
         <Link href="/dashboard" className="underline">
           Back to Dashboard
         </Link>
       </p>
+
+      <section className="mt-6 rounded border bg-gray-50 p-6">
+        <p className="text-sm font-medium uppercase tracking-wide text-gray-500">
+          {getTrackLabel(track)} Track
+        </p>
+
+        <h1 className="mt-2 text-3xl font-bold">{trackData.title}</h1>
+
+        <p className="mt-3 max-w-3xl text-gray-700">
+          {trackData.description ?? getTrackValueProp(track)}
+        </p>
+
+        <p className="mt-4 max-w-3xl text-sm text-gray-600">
+          {getSuggestedPath(track)}
+        </p>
+
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link
+            href={`/dashboard/${track}/warmup`}
+            className="inline-flex items-center justify-center rounded border bg-white px-4 py-2 text-sm font-medium transition hover:bg-gray-100"
+          >
+            Start Warmup Tests
+          </Link>
+
+          <Link
+            href={`/dashboard/${track}/timed`}
+            className="inline-flex items-center justify-center rounded border bg-white px-4 py-2 text-sm font-medium transition hover:bg-gray-100"
+          >
+            Try Timed Test
+          </Link>
+        </div>
+      </section>
+
+      <section className="mt-8 grid gap-6 md:grid-cols-2">
+        <div className="rounded border p-6">
+          <h2 className="text-xl font-semibold">Crash Course</h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Review the core concepts for this track before jumping into practice.
+          </p>
+
+          <ul className="mt-4 space-y-3">
+            {lessons.map((lesson) => (
+              <li key={lesson.id}>
+                <Link
+                  href={`/dashboard/${track}/crash-course/${lesson.slug}`}
+                  className="block rounded border p-4 transition hover:bg-gray-50"
+                >
+                  <h3 className="text-base font-semibold">
+                    {lesson.lesson_order}. {lesson.title}
+                  </h3>
+                  <p className="mt-1 text-sm text-gray-600">
+                    {lesson.summary ?? "No summary yet."}
+                  </p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="space-y-6">
+          <div className="rounded border p-6">
+            <h2 className="text-xl font-semibold">Warmup Tests</h2>
+            <p className="mt-2 text-sm text-gray-600">
+              Untimed practice questions with instant feedback. Best for building
+              confidence and learning the patterns.
+            </p>
+
+            <div className="mt-4">
+              <Link
+                href={`/dashboard/${track}/warmup`}
+                className="inline-flex items-center justify-center rounded border px-4 py-2 text-sm font-medium transition hover:bg-gray-50"
+              >
+                Open Warmup Tests
+              </Link>
+            </div>
+          </div>
+
+          <div className="rounded border p-6">
+            <h2 className="text-xl font-semibold">Timed Test</h2>
+            <p className="mt-2 text-sm text-gray-600">
+              Practice under time pressure with a short mixed set of questions
+              designed to simulate a coding assessment.
+            </p>
+
+            <div className="mt-4">
+              <Link
+                href={`/dashboard/${track}/timed`}
+                className="inline-flex items-center justify-center rounded border px-4 py-2 text-sm font-medium transition hover:bg-gray-50"
+              >
+                Open Timed Test
+              </Link>
+            </div>
+          </div>
+
+          <div className="rounded border p-6">
+            <h2 className="text-xl font-semibold">Suggested Path</h2>
+            <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-gray-700">
+              <li>Review the crash course lessons.</li>
+              <li>Complete a few warmup tests.</li>
+              <li>Take a timed test and review your results.</li>
+            </ol>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

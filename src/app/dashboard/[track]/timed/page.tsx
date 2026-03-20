@@ -74,7 +74,7 @@ export default async function TimedPage({ params }: PageProps) {
   }
 
   return (
-    <div>
+    <div className="max-w-3xl">
       <p>
         <Link href={`/dashboard/${track}`} className="underline">
           Back to {track.toUpperCase()}
@@ -86,10 +86,11 @@ export default async function TimedPage({ params }: PageProps) {
       </h1>
 
       <p className="mt-2 text-gray-600">
-        Complete a timed set of questions to simulate a coding assessment.
+        Simulate a short {getTrackLabel(track)} coding assessment with a timed,
+        auto-graded practice set.
       </p>
 
-      <section className="mt-8 max-w-xl rounded border bg-gray-50 p-6">
+      <section className="mt-8 rounded border bg-gray-50 p-6">
         <h2 className="text-xl font-semibold">Ready to begin?</h2>
 
         <ul className="mt-4 space-y-2 text-sm text-gray-700">
@@ -99,11 +100,23 @@ export default async function TimedPage({ params }: PageProps) {
           <li>• Results saved to your timed test history</li>
         </ul>
 
-        <div className="mt-6">
+        <p className="mt-4 text-sm text-gray-600">
+          This is best after you’ve done a few warmup questions and want to
+          practice under light time pressure.
+        </p>
+
+        <div className="mt-6 flex flex-wrap gap-3">
           <StartTimedTestButton
             track={track}
             activeSessionId={activeSessionId}
           />
+
+          <Link
+            href={`/dashboard/${track}/timed/history`}
+            className="inline-flex items-center justify-center rounded border bg-white px-4 py-2 text-sm font-medium transition hover:bg-gray-100"
+          >
+            View Timed Test History
+          </Link>
         </div>
       </section>
     </div>
