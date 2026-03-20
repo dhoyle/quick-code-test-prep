@@ -14,7 +14,7 @@ export default async function TrackLayout({ children, params }: Props) {
   return (
     <div className="flex min-h-screen">
       <TrackSidebar track={track} />
-      <main className="flex-1 p-8">{children}</main>
+      <main className="flex-1 p-8 text-base leading-relaxed">{children}</main>
     </div>
   );
 }

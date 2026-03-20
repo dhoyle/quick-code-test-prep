@@ -39,7 +39,7 @@ type Props = {
 };
 
 function itemClasses(isActive: boolean) {
-  const base = "block rounded px-2 py-1 text-sm";
+  const base = "block rounded px-2 py-1 text-base";
 
   return isActive
     ? `${base} border-l-2 border-black bg-gray-100 font-semibold text-black`
@@ -48,8 +48,8 @@ function itemClasses(isActive: boolean) {
 
 function topLinkClasses(isActive: boolean) {
   return isActive
-    ? "block rounded px-2 py-1 font-semibold text-black"
-    : "block rounded px-2 py-1 text-gray-700 hover:bg-gray-50 hover:underline";
+    ? "block rounded px-2 py-1 text-base font-semibold text-black"
+    : "block rounded px-2 py-1 text-base text-gray-700 hover:bg-gray-50 hover:underline";
 }
 
 export default function TrackSidebarClient({
@@ -69,7 +69,7 @@ export default function TrackSidebarClient({
 
   return (
     <aside className="w-72 shrink-0 border-r p-6">
-      <h2 className="text-lg font-semibold">Quick Code Test Prep</h2>
+      <h2 className="text-xl font-semibold">Quick Code Test Prep</h2>
 
       <nav className="mt-6 space-y-6">
         <div>
@@ -82,7 +82,9 @@ export default function TrackSidebarClient({
         </div>
 
         <div>
-          <p className="px-2 text-sm font-semibold text-gray-500">Current Track</p>
+          <p className="px-2 text-base font-semibold text-gray-500">
+            Current Track
+          </p>
           <div className="mt-2">
             <Link
               href={trackHref}
@@ -94,7 +96,9 @@ export default function TrackSidebarClient({
         </div>
 
         <div>
-          <p className="px-2 text-sm font-semibold text-gray-500">Crash Course</p>
+          <p className="px-2 text-base font-semibold text-gray-500">
+            Crash Course
+          </p>
           <ul className="mt-2 space-y-1">
             {lessons.map((lesson) => {
               const href = `/dashboard/${track}/crash-course/${lesson.slug}`;
@@ -112,10 +116,12 @@ export default function TrackSidebarClient({
         </div>
 
         <div>
-          <p className="px-2 text-sm font-semibold text-gray-500">Practice Tests</p>
+          <p className="px-2 text-base font-semibold text-gray-500">
+            Practice Tests
+          </p>
 
           <div className="mt-2">
-            <p className="px-2 text-sm font-semibold text-gray-500">
+            <p className="px-2 text-base font-semibold text-gray-500">
               Warmup Tests
             </p>
 
@@ -139,7 +145,7 @@ export default function TrackSidebarClient({
                         </span>
 
                         {progress && (
-                          <span className="text-xs text-gray-500">
+                          <span className="text-sm text-gray-500">
                             {progress.isComplete ? "✓" : `${progress.bestScore}%`}
                           </span>
                         )}
@@ -160,7 +166,7 @@ export default function TrackSidebarClient({
             >
               <span>Timed Test</span>
               {bestTimedScore !== null && (
-                <span className="text-xs text-gray-500">{bestTimedScore}%</span>
+                <span className="text-sm text-gray-500">{bestTimedScore}%</span>
               )}
             </Link>
 
@@ -177,7 +183,9 @@ export default function TrackSidebarClient({
 
         {otherTracks.length > 0 && (
           <div>
-            <p className="px-2 text-sm font-semibold text-gray-500">Other Tracks</p>
+            <p className="px-2 text-base font-semibold text-gray-500">
+              Other Tracks
+            </p>
             <ul className="mt-2 space-y-1">
               {otherTracks.map((otherTrack) => {
                 const href = `/dashboard/${otherTrack.slug}`;
