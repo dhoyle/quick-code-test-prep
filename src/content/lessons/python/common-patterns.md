@@ -1,6 +1,6 @@
 # Common Patterns
 
-Once you know variables, functions, conditionals, and loops, most beginner Python interview problems reduce to a few patterns.
+Once you know variables, functions, conditionals, and loops, most basic Python interview problems reduce to a few patterns.
 
 ## Pattern 1: Membership check
 

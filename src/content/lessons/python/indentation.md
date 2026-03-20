@@ -33,7 +33,7 @@ This will cause an error because Python expects the block under `if` to be inden
 
 ## Why this matters in coding tests
 
-A lot of beginner Python mistakes are not logic mistakes — they are indentation mistakes.
+Oftentimes, Python mistakes are not logic mistakes — they are indentation mistakes.
 
 Your answer may be conceptually correct, but still fail if indentation is off.
 
