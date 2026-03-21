@@ -44,6 +44,11 @@ const PYTHON_LESSON_TO_WARMUP_SLUG: Record<string, string> = {
   functions: "add-two-numbers",
   "lists-and-loops": "filter-evens",
   "common-patterns": "count-items",
+  strings: "count-vowels",
+  dictionaries: "count-items",
+  sets: "contains-value",
+  "list-comprehensions": "filter-evens",
+  "common-built-ins": "sum-list",
 };
 
 async function getLessonMarkdown(track: string, lessonSlug: string) {

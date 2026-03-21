@@ -36,10 +36,43 @@ This returns the remainder after dividing 7 by 2, which is 1.
 Example:
 
 ```python
-n % 2 == 0
+score = 85
+passed = score >= 70
 ```
 
-This means “the remainder when dividing `n` by 2 is 0,” which is how we check if a number is even.
+This checks whether the score is at least 70 and stores the result (`True` or `False`) in `passed`.
+
+## Example: checking even vs odd
+
+```python
+n = 8
+is_even = n % 2 == 0
+```
+
+This first computes the remainder of `n` divided by 2, then checks whether that remainder is 0.
+
+## Example: comparing values
+
+```python
+a = 10
+b = 7
+a_is_larger = a > b
+```
+
+This compares two values and stores whether `a` is greater than `b`.
+
+## Example: building conditions
+
+```python
+age = 20
+
+if age >= 18:
+    result = "adult"
+else:
+    result = "minor"
+```
+
+This uses a comparison operator inside a condition to decide which value to assign.
 
 ## Why this matters in coding tests
 

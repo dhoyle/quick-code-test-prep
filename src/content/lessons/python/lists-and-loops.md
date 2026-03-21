@@ -54,6 +54,49 @@ def filter_evens(numbers):
 
 This does the same filtering in one line.
 
+## Example: summing values
+
+```python
+def sum_list(numbers):
+    total = 0
+
+    for n in numbers:
+        total += n
+
+    return total
+```
+
+This loops through the list and adds each value to a running total.
+
+## Example: finding a maximum
+
+```python
+def find_max(numbers):
+    largest = numbers[0]
+
+    for n in numbers:
+        if n > largest:
+            largest = n
+
+    return largest
+```
+
+This scans the list and keeps track of the largest value seen so far.
+
+## Example: transforming items
+
+```python
+def double_values(numbers):
+    result = []
+
+    for n in numbers:
+        result.append(n * 2)
+
+    return result
+```
+
+This creates a new list where each value is doubled.
+
 ## Why this matters in coding tests
 
 A huge number of problems involve:
