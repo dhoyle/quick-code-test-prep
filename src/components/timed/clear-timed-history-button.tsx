@@ -42,7 +42,7 @@ export default function ClearTimedHistoryButton({ track }: Props) {
         type="button"
         onClick={handleClick}
         disabled={isPending}
-        className="inline-flex items-center justify-center rounded border px-4 py-2 text-sm font-medium text-red-700 transition cursor-pointer hover:bg-red-50 active:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="inline-flex cursor-pointer items-center justify-center rounded border px-5 py-2.5 text-base font-medium text-red-700 transition hover:bg-red-50 active:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {isPending ? "Clearing..." : "Clear Timed Test History"}
       </button>

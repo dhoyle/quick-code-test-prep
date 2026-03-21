@@ -113,7 +113,7 @@ export default async function TimedPage({ params }: PageProps) {
 
           <Link
             href={`/dashboard/${track}/timed/history`}
-            className="inline-flex items-center justify-center rounded border bg-white px-4 py-2 text-sm font-medium transition hover:bg-gray-100"
+            className="inline-flex items-center justify-center rounded border bg-white px-5 py-2.5 text-base font-medium transition hover:bg-gray-100"
           >
             View Timed Test History
           </Link>

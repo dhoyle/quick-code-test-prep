@@ -24,10 +24,10 @@ function getTrackValueProp(track: string) {
 
 function getSuggestedPath(track: string) {
   if (track === "python") {
-    return "New to Python or need a refresher? Start with the crash course, then work through warmup tests before trying a timed session.";
+    return "New to Python or need a refresher? Review key concepts in the crash course, build confidence with warmup tests, and then simulate a real assessment with a timed test.";
   }
 
-  return "New to SQL or need a refresher? Review key concepts, build confidence with warmup tests, and then simulate a real assessment with a timed test.";
+  return "New to SQL or need a refresher? Review key concepts in the crash course, build confidence with warmup tests, and then simulate a real assessment with a timed test.";
 }
 
 export default async function TrackPage({ params }: PageProps) {
@@ -49,6 +49,7 @@ export default async function TrackPage({ params }: PageProps) {
   }
 
   const lessons = await getLessonsByTrackSlug(track);
+  const firstLesson = lessons[0] ?? null;
 
   return (
     <div className="max-w-5xl">
@@ -58,7 +59,6 @@ export default async function TrackPage({ params }: PageProps) {
         </Link>
       </p>
 
-      {/* Hero Section */}
       <section className="mt-6 rounded border bg-gray-50 p-6">
         <p className="text-sm font-medium uppercase tracking-wide text-gray-500">
           {getTrackLabel(track)} Track
@@ -75,25 +75,32 @@ export default async function TrackPage({ params }: PageProps) {
         </p>
 
         <div className="mt-6 flex flex-wrap gap-3">
+          {firstLesson && (
+            <Link
+              href={`/dashboard/${track}/crash-course/${firstLesson.slug}`}
+              className="inline-flex items-center justify-center rounded border bg-white px-5 py-2.5 text-base font-medium transition hover:bg-gray-100"
+            >
+              Start Crash Course
+            </Link>
+          )}
+
           <Link
             href={`/dashboard/${track}/warmup`}
-            className="inline-flex items-center justify-center rounded border bg-white px-4 py-2 text-sm font-medium transition hover:bg-gray-100"
+            className="inline-flex items-center justify-center rounded border bg-white px-5 py-2.5 text-base font-medium transition hover:bg-gray-100"
           >
             Start Warmup Tests
           </Link>
 
           <Link
             href={`/dashboard/${track}/timed`}
-            className="inline-flex items-center justify-center rounded border bg-white px-4 py-2 text-sm font-medium transition hover:bg-gray-100"
+            className="inline-flex items-center justify-center rounded border bg-white px-5 py-2.5 text-base font-medium transition hover:bg-gray-100"
           >
             Try Timed Test
           </Link>
         </div>
       </section>
 
-      {/* Main Content */}
       <section className="mt-8 grid gap-6 md:grid-cols-2">
-        {/* Crash Course */}
         <div className="rounded border p-6">
           <h2 className="text-xl font-semibold">Crash Course</h2>
           <p className="mt-2 text-base text-gray-600">
@@ -119,9 +126,7 @@ export default async function TrackPage({ params }: PageProps) {
           </ul>
         </div>
 
-        {/* Right Column */}
         <div className="space-y-6">
-          {/* Warmup */}
           <div className="rounded border p-6">
             <h2 className="text-xl font-semibold">Warmup Tests</h2>
             <p className="mt-2 text-base text-gray-600">
@@ -132,14 +137,13 @@ export default async function TrackPage({ params }: PageProps) {
             <div className="mt-4">
               <Link
                 href={`/dashboard/${track}/warmup`}
-                className="inline-flex items-center justify-center rounded border px-4 py-2 text-sm font-medium transition hover:bg-gray-50"
+                className="inline-flex items-center justify-center rounded border px-5 py-2.5 text-base font-medium transition hover:bg-gray-50"
               >
                 Open Warmup Tests
               </Link>
             </div>
           </div>
 
-          {/* Timed */}
           <div className="rounded border p-6">
             <h2 className="text-xl font-semibold">Timed Test</h2>
             <p className="mt-2 text-base text-gray-600">
@@ -150,21 +154,11 @@ export default async function TrackPage({ params }: PageProps) {
             <div className="mt-4">
               <Link
                 href={`/dashboard/${track}/timed`}
-                className="inline-flex items-center justify-center rounded border px-4 py-2 text-sm font-medium transition hover:bg-gray-50"
+                className="inline-flex items-center justify-center rounded border px-5 py-2.5 text-base font-medium transition hover:bg-gray-50"
               >
                 Open Timed Test
               </Link>
             </div>
-          </div>
-
-          {/* Suggested Path */}
-          <div className="rounded border p-6">
-            <h2 className="text-xl font-semibold">Suggested Path</h2>
-            <ol className="mt-3 list-decimal space-y-2 pl-5 text-base text-gray-700">
-              <li>Review the crash course lessons.</li>
-              <li>Complete a few warmup tests.</li>
-              <li>Take a timed test and review your results.</li>
-            </ol>
           </div>
         </div>
       </section>
