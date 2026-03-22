@@ -29,4 +29,5 @@ export type TrackCheckResult = {
   missing: string[];
   forbiddenMatched: string[];
   unexpectedColumns?: string[];
+  missingParamUsage?: string[];
 };

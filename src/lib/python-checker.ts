@@ -32,7 +32,21 @@ function dedupeStrings(values: string[]): string[] {
   return result;
 }
 
-function getVariableConsistencyMissing(question: PythonQuestion, normalized: string) {
+function extractFunctionParams(code: string): string[] {
+  const match = code.match(/def\s+\w+\s*\((.*?)\)/);
+
+  if (!match) return [];
+
+  return match[1]
+    .split(",")
+    .map((param) => param.trim())
+    .filter(Boolean);
+}
+
+function getVariableConsistencyMissing(
+  question: PythonQuestion,
+  normalized: string
+) {
   const missing: string[] = [];
 
   switch (question.slug) {
@@ -89,6 +103,12 @@ export function checkPythonAttempt({
   const forbiddenTokens = dedupeStrings(question.forbiddenTokens ?? []);
   const acceptedPatterns = dedupeStrings(question.acceptedPatterns ?? []);
 
+  const params = extractFunctionParams(userAnswer);
+  const variableConsistencyMissing = getVariableConsistencyMissing(
+    question,
+    normalized
+  );
+
   const normalizedAcceptedPatterns = acceptedPatterns.map(normalizePython);
 
   const exactAccepted =
@@ -98,6 +118,10 @@ export function checkPythonAttempt({
   const functionNameMatched = expectedFunctionName
     ? normalized.includes(normalizePython(`def ${expectedFunctionName}`))
     : true;
+
+  const missingParamUsage = dedupeStrings(
+    params.filter((param) => !normalized.includes(normalizePython(param)))
+  );
 
   const matched = dedupeStrings([
     ...(functionNameMatched && expectedFunctionName
@@ -115,7 +139,7 @@ export function checkPythonAttempt({
     ...requiredTokens.filter(
       (token) => !normalized.includes(normalizePython(token))
     ),
-    ...getVariableConsistencyMissing(question, normalized),
+    ...variableConsistencyMissing,
   ]);
 
   const forbiddenMatched = dedupeStrings(
@@ -127,7 +151,7 @@ export function checkPythonAttempt({
   const totalExpectedCount =
     requiredTokens.length +
     (expectedFunctionName ? 1 : 0) +
-    getVariableConsistencyMissing(question, normalized).length;
+    variableConsistencyMissing.length;
 
   const baseScore =
     totalExpectedCount === 0
@@ -143,12 +167,19 @@ export function checkPythonAttempt({
     score = Math.max(0, score - forbiddenMatched.length * 25);
   }
 
+  if (missingParamUsage.length > 0) {
+    score = Math.max(0, score - 30);
+  }
+
   if (exactAccepted) {
     score = 100;
   }
 
   const isCorrect =
-    exactAccepted || (missing.length === 0 && forbiddenMatched.length === 0);
+    exactAccepted ||
+    (missing.length === 0 &&
+      forbiddenMatched.length === 0 &&
+      missingParamUsage.length === 0);
 
   return {
     isCorrect,
@@ -157,5 +188,6 @@ export function checkPythonAttempt({
     missing,
     forbiddenMatched,
     unexpectedColumns: [],
+    missingParamUsage,
   };
 }
