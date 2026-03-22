@@ -6,7 +6,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     slug: "add-two-numbers",
     title: "Add Two Numbers",
     promptText:
-      "Write a function named add_numbers that takes a and b and returns their sum.",
+      "Write a function named `add_numbers` that takes `a` and `b` and returns their sum.",
     expectedFunctionName: "add_numbers",
     requiredTokens: ["def add_numbers", "return", "+"],
     acceptedPatterns: [
@@ -19,7 +19,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     slug: "is-even",
     title: "Check Even Number",
     promptText:
-      "Write a function named is_even that takes n and returns True if n is even, otherwise False.",
+      "Write a function named `is_even` that takes `n` and returns `True` if `n` is even, otherwise `False`.",
     expectedFunctionName: "is_even",
     requiredTokens: ["def is_even", "return", "%", "== 0"],
     acceptedPatterns: [
@@ -31,7 +31,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     slug: "first-item",
     title: "First Item in List",
     promptText:
-      "Write a function named first_item that takes a list items and returns the first element.",
+      "Write a function named `first_item` that takes a list `items` and returns the first element.",
     expectedFunctionName: "first_item",
     requiredTokens: ["def first_item", "return", "[0]"],
     acceptedPatterns: [
@@ -43,7 +43,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     slug: "reverse-string",
     title: "Reverse String",
     promptText:
-      "Write a function named reverse_string that takes a string text and returns the reversed string.",
+      "Write a function named `reverse_string` that takes a string `text` and returns the reversed string.",
     expectedFunctionName: "reverse_string",
     requiredTokens: ["def reverse_string", "return"],
     acceptedPatterns: [
@@ -55,7 +55,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     slug: "sum-list",
     title: "Sum a List",
     promptText:
-      "Write a function named sum_list that takes a list of numbers and returns the total.",
+      "Write a function named `sum_list` that takes a list of numbers and returns the total.",
     expectedFunctionName: "sum_list",
     requiredTokens: ["def sum_list", "return"],
     acceptedPatterns: [
@@ -68,7 +68,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     slug: "find-max",
     title: "Find Maximum",
     promptText:
-      "Write a function named find_max that takes a list of numbers and returns the largest value.",
+      "Write a function named `find_max` that takes a list of numbers and returns the largest value.",
     expectedFunctionName: "find_max",
     requiredTokens: ["def find_max", "return"],
     acceptedPatterns: [
@@ -81,7 +81,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     slug: "filter-evens",
     title: "Filter Even Numbers",
     promptText:
-      "Write a function named filter_evens that takes a list of numbers and returns a new list containing only the even numbers.",
+      "Write a function named `filter_evens` that takes a list of numbers and returns a new list containing only the even numbers.",
     expectedFunctionName: "filter_evens",
     requiredTokens: ["def filter_evens", "return"],
     acceptedPatterns: [
@@ -94,7 +94,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     slug: "count-items",
     title: "Count Items with Dictionary",
     promptText:
-      "Write a function named count_items that takes a list items and returns a dictionary with counts for each item.",
+      "Write a function named `count_items` that takes a list `items` and returns a dictionary with counts for each item.",
     expectedFunctionName: "count_items",
     requiredTokens: ["def count_items", "for", "return"],
     acceptedPatterns: [
@@ -106,7 +106,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     slug: "count-vowels",
     title: "Count Vowels",
     promptText:
-      "Write a function named count_vowels that takes a string text and returns the number of vowels in it.",
+      "Write a function named `count_vowels` that takes a string `text` and returns the number of vowels in it.",
     expectedFunctionName: "count_vowels",
     requiredTokens: ["def count_vowels", "for", "return"],
     acceptedPatterns: [
@@ -118,7 +118,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     slug: "contains-value",
     title: "Check List Contains Value",
     promptText:
-      "Write a function named contains_value that takes a list items and a target value and returns True if target is in the list, otherwise False.",
+      "Write a function named `contains_value` that takes a list `items` and a `target` value and returns `True` if `target` is in the list, otherwise `False`.",
     expectedFunctionName: "contains_value",
     requiredTokens: ["def contains_value", "return", "in"],
     acceptedPatterns: [
@@ -130,7 +130,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     slug: "string-length",
     title: "String Length",
     promptText:
-      "Write a function named string_length that takes a string text and returns its length.",
+      "Write a function named `string_length` that takes a string `text` and returns its length.",
     expectedFunctionName: "string_length",
     requiredTokens: ["def string_length", "return"],
     acceptedPatterns: [
@@ -143,7 +143,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     slug: "normalize-text",
     title: "Normalize Text",
     promptText:
-      "Write a function named normalize_text that takes a string text and returns the lowercase version with leading and trailing spaces removed.",
+      "Write a function named `normalize_text` that takes a string `text` and returns the lowercase version with leading and trailing spaces removed.",
     expectedFunctionName: "normalize_text",
     requiredTokens: ["def normalize_text", "return", ".strip()", ".lower()"],
     acceptedPatterns: [
@@ -156,7 +156,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     slug: "get-score",
     title: "Dictionary Lookup",
     promptText:
-      "Write a function named get_score that takes a dictionary scores and a name, and returns the value for that name.",
+      "Write a function named `get_score` that takes a dictionary `scores` and a `name`, and returns the value for that name.",
     expectedFunctionName: "get_score",
     requiredTokens: ["def get_score", "return"],
     acceptedPatterns: [
@@ -169,7 +169,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     slug: "has-key",
     title: "Check Dictionary Key",
     promptText:
-      "Write a function named has_key that takes a dictionary data and a key, and returns True if the key exists in the dictionary, otherwise False.",
+      "Write a function named `has_key` that takes a dictionary `data` and a `key`, and returns `True` if the key exists in the dictionary, otherwise `False`.",
     expectedFunctionName: "has_key",
     requiredTokens: ["def has_key", "return", "in"],
     acceptedPatterns: [
@@ -181,7 +181,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     slug: "unique-items",
     title: "Unique Items with Set",
     promptText:
-      "Write a function named unique_items that takes a list items and returns a set of the unique values.",
+      "Write a function named `unique_items` that takes a list `items` and returns a set of the unique values.",
     expectedFunctionName: "unique_items",
     requiredTokens: ["def unique_items", "return", "set("],
     acceptedPatterns: [
@@ -193,7 +193,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     slug: "has-duplicate",
     title: "Detect Duplicate",
     promptText:
-      "Write a function named has_duplicate that takes a list items and returns True if any value appears more than once, otherwise False.",
+      "Write a function named `has_duplicate` that takes a list `items` and returns `True` if any value appears more than once, otherwise `False`.",
     expectedFunctionName: "has_duplicate",
     requiredTokens: ["def has_duplicate", "return"],
     acceptedPatterns: [
@@ -210,7 +210,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     slug: "square-list",
     title: "Square a List",
     promptText:
-      "Write a function named square_list that takes a list of numbers and returns a new list containing the square of each value.",
+      "Write a function named `square_list` that takes a list of numbers and returns a new list containing the square of each value.",
     expectedFunctionName: "square_list",
     requiredTokens: ["def square_list", "return"],
     acceptedPatterns: [
@@ -226,7 +226,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     slug: "reverse-words",
     title: "Reverse Words",
     promptText:
-      "Write a function named reverse_words that takes a string text and returns a list of the words in reverse order.",
+      "Write a function named `reverse_words` that takes a string `text` and returns a list of the words in reverse order.",
     expectedFunctionName: "reverse_words",
     requiredTokens: ["def reverse_words", "return"],
     acceptedPatterns: [
@@ -239,7 +239,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     slug: "is-palindrome",
     title: "Check Palindrome",
     promptText:
-      "Write a function named is_palindrome that takes a string text and returns True if it reads the same forward and backward.",
+      "Write a function named `is_palindrome` that takes a string `text` and returns `True` if it reads the same forward and backward.",
     expectedFunctionName: "is_palindrome",
     requiredTokens: ["def is_palindrome", "return"],
     acceptedPatterns: [
@@ -251,7 +251,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     slug: "count-character",
     title: "Count Character",
     promptText:
-      "Write a function named count_character that takes a string text and a character ch, and returns how many times ch appears.",
+      "Write a function named `count_character` that takes a string `text` and a character `ch`, and returns how many times `ch` appears.",
     expectedFunctionName: "count_character",
     requiredTokens: ["def count_character", "return"],
     acceptedPatterns: [
@@ -263,7 +263,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     slug: "smallest-number",
     title: "Find Smallest Number",
     promptText:
-      "Write a function named smallest_number that takes a list of numbers and returns the smallest value.",
+      "Write a function named `smallest_number` that takes a list of numbers and returns the smallest value.",
     expectedFunctionName: "smallest_number",
     requiredTokens: ["def smallest_number", "return"],
     acceptedPatterns: [
@@ -275,7 +275,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     slug: "remove-duplicates",
     title: "Remove Duplicates",
     promptText:
-      "Write a function named remove_duplicates that takes a list items and returns a list of unique values.",
+      "Write a function named `remove_duplicates` that takes a list `items` and returns a list of unique values.",
     expectedFunctionName: "remove_duplicates",
     requiredTokens: ["def remove_duplicates", "return"],
     acceptedPatterns: [
@@ -287,7 +287,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     slug: "merge-lists",
     title: "Merge Two Lists",
     promptText:
-      "Write a function named merge_lists that takes two lists a and b and returns a combined list.",
+      "Write a function named `merge_lists` that takes two lists `a` and `b` and returns a combined list.",
     expectedFunctionName: "merge_lists",
     requiredTokens: ["def merge_lists", "return"],
     acceptedPatterns: [
@@ -299,7 +299,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     slug: "invert-dictionary",
     title: "Invert Dictionary",
     promptText:
-      "Write a function named invert_dictionary that swaps keys and values in a dictionary.",
+      "Write a function named `invert_dictionary` that swaps keys and values in a dictionary `data`.",
     expectedFunctionName: "invert_dictionary",
     requiredTokens: ["def invert_dictionary", "return"],
     acceptedPatterns: [
@@ -311,7 +311,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     slug: "double-evens",
     title: "Double Even Numbers",
     promptText:
-      "Write a function named double_evens that doubles only the even numbers in a list.",
+      "Write a function named `double_evens` that takes a list of numbers and returns a new list where only the even numbers are doubled.",
     expectedFunctionName: "double_evens",
     requiredTokens: ["def double_evens", "return"],
     acceptedPatterns: [
@@ -323,7 +323,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     slug: "sum-even-numbers",
     title: "Sum Even Numbers",
     promptText:
-      "Write a function named sum_even_numbers that returns the sum of even numbers in a list.",
+      "Write a function named `sum_even_numbers` that takes a list of numbers and returns the sum of only the even values.",
     expectedFunctionName: "sum_even_numbers",
     requiredTokens: ["def sum_even_numbers", "return"],
     acceptedPatterns: [

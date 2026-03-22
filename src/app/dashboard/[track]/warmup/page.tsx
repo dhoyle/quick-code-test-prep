@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getTrackBySlug } from "@/db/tracks";
@@ -59,7 +60,10 @@ export default async function WarmupPage({ params }: PageProps) {
                 <h3 className="text-lg font-semibold">
                   {index + 1}. {question.title}
                 </h3>
-                <p className="mt-1 text-sm text-gray-600">{question.promptText}</p>
+
+                <div className="prose mt-2 max-w-none prose-p:my-0 prose-code:before:content-none prose-code:after:content-none prose-code:rounded prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:font-mono prose-code:font-normal prose-code:text-[1em]">
+                  <ReactMarkdown>{question.promptText}</ReactMarkdown>
+                </div>
               </Link>
             </li>
           ))}
