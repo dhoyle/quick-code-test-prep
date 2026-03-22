@@ -24,7 +24,6 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     requiredTokens: ["def is_even", "return", "%", "== 0"],
     acceptedPatterns: [
       "def is_even(n): return n % 2 == 0",
-      "def is_even(n): return (n % 2) == 0",
     ],
   },
   {
@@ -49,7 +48,6 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     requiredTokens: ["def reverse_string", "return"],
     acceptedPatterns: [
       "def reverse_string(text): return text[::-1]",
-      "def reverse_string(text): return text[:: -1]",
     ],
   },
   {
@@ -98,7 +96,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     promptText:
       "Write a function named count_items that takes a list items and returns a dictionary with counts for each item.",
     expectedFunctionName: "count_items",
-    requiredTokens: ["def count_items", "for", "return", "counts", ".get("],
+    requiredTokens: ["def count_items", "for", "return"],
     acceptedPatterns: [
       "def count_items(items): counts = {}; for item in items: counts[item] = counts.get(item, 0) + 1; return counts",
     ],
@@ -220,17 +218,116 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
       "def square_list(nums): return [n * n for n in nums]",
     ],
   },
+
+  // NEW QUESTIONS
+
   {
     track: "python",
-    slug: "sort-numbers",
-    title: "Sort Numbers",
+    slug: "reverse-words",
+    title: "Reverse Words",
     promptText:
-      "Write a function named sort_numbers that takes a list of numbers and returns a sorted version of the list.",
-    expectedFunctionName: "sort_numbers",
-    requiredTokens: ["def sort_numbers", "return", "sorted("],
+      "Write a function named reverse_words that takes a string text and returns a list of the words in reverse order.",
+    expectedFunctionName: "reverse_words",
+    requiredTokens: ["def reverse_words", "return"],
     acceptedPatterns: [
-      "def sort_numbers(numbers): return sorted(numbers)",
-      "def sort_numbers(nums): return sorted(nums)",
+      "def reverse_words(text): return text.split()[::-1]",
+      "def reverse_words(text): return list(reversed(text.split()))",
+    ],
+  },
+  {
+    track: "python",
+    slug: "is-palindrome",
+    title: "Check Palindrome",
+    promptText:
+      "Write a function named is_palindrome that takes a string text and returns True if it reads the same forward and backward.",
+    expectedFunctionName: "is_palindrome",
+    requiredTokens: ["def is_palindrome", "return"],
+    acceptedPatterns: [
+      "def is_palindrome(text): return text == text[::-1]",
+    ],
+  },
+  {
+    track: "python",
+    slug: "count-character",
+    title: "Count Character",
+    promptText:
+      "Write a function named count_character that takes a string text and a character ch, and returns how many times ch appears.",
+    expectedFunctionName: "count_character",
+    requiredTokens: ["def count_character", "return"],
+    acceptedPatterns: [
+      "def count_character(text, ch): return text.count(ch)",
+    ],
+  },
+  {
+    track: "python",
+    slug: "smallest-number",
+    title: "Find Smallest Number",
+    promptText:
+      "Write a function named smallest_number that takes a list of numbers and returns the smallest value.",
+    expectedFunctionName: "smallest_number",
+    requiredTokens: ["def smallest_number", "return"],
+    acceptedPatterns: [
+      "def smallest_number(nums): return min(nums)",
+    ],
+  },
+  {
+    track: "python",
+    slug: "remove-duplicates",
+    title: "Remove Duplicates",
+    promptText:
+      "Write a function named remove_duplicates that takes a list items and returns a list of unique values.",
+    expectedFunctionName: "remove_duplicates",
+    requiredTokens: ["def remove_duplicates", "return"],
+    acceptedPatterns: [
+      "def remove_duplicates(items): return list(set(items))",
+    ],
+  },
+  {
+    track: "python",
+    slug: "merge-lists",
+    title: "Merge Two Lists",
+    promptText:
+      "Write a function named merge_lists that takes two lists a and b and returns a combined list.",
+    expectedFunctionName: "merge_lists",
+    requiredTokens: ["def merge_lists", "return"],
+    acceptedPatterns: [
+      "def merge_lists(a, b): return a + b",
+    ],
+  },
+  {
+    track: "python",
+    slug: "invert-dictionary",
+    title: "Invert Dictionary",
+    promptText:
+      "Write a function named invert_dictionary that swaps keys and values in a dictionary.",
+    expectedFunctionName: "invert_dictionary",
+    requiredTokens: ["def invert_dictionary", "return"],
+    acceptedPatterns: [
+      "def invert_dictionary(data): return {v: k for k, v in data.items()}",
+    ],
+  },
+  {
+    track: "python",
+    slug: "double-evens",
+    title: "Double Even Numbers",
+    promptText:
+      "Write a function named double_evens that doubles only the even numbers in a list.",
+    expectedFunctionName: "double_evens",
+    requiredTokens: ["def double_evens", "return"],
+    acceptedPatterns: [
+      "def double_evens(nums): return [n * 2 if n % 2 == 0 else n for n in nums]",
+    ],
+  },
+  {
+    track: "python",
+    slug: "sum-even-numbers",
+    title: "Sum Even Numbers",
+    promptText:
+      "Write a function named sum_even_numbers that returns the sum of even numbers in a list.",
+    expectedFunctionName: "sum_even_numbers",
+    requiredTokens: ["def sum_even_numbers", "return"],
+    acceptedPatterns: [
+      "def sum_even_numbers(nums): return sum(n for n in nums if n % 2 == 0)",
     ],
   },
 ];
