@@ -23,29 +23,29 @@ function getCoachingMessage(
   result: TrackCheckResult
 ): string | null {
   if (result.unexpectedColumns && result.unexpectedColumns.length > 0) {
-    return "Tip: Only return the columns requested in the prompt.";
+    return "Tip: Only return the columns requested in the question.";
   }
 
   if (result.missingParamUsage && result.missingParamUsage.length > 0) {
-    return "Tip: Make sure you actually use the function parameters from the prompt in your solution.";
+    return "Tip: Make sure you actually use the function parameters from the question in your solution.";
   }
 
   if (result.forbiddenMatched.length > 0) {
     return track === "python"
-      ? "Tip: Avoid disallowed shortcuts and focus on the function structure the prompt is asking for."
+      ? "Tip: Avoid disallowed shortcuts and focus on the function structure the question is asking for."
       : "Tip: Avoid shortcuts or disallowed elements, and focus on the exact SQL pattern the question is asking for.";
   }
 
   if (result.missing.length > 0) {
     return track === "python"
-      ? "Tip: Re-read the prompt and make sure your function includes the required name, return behavior, and key Python elements."
-      : "Tip: Re-read the prompt and make sure your query includes each required SQL clause or condition.";
+      ? "Tip: Re-read the question and make sure your function includes the required name, return behavior, and key Python elements."
+      : "Tip: Re-read the question and make sure your query includes each required SQL clause or condition.";
   }
 
   if (result.isCorrect) {
     return track === "python"
-      ? "Nice work — this answer includes the required Python elements for the prompt."
-      : "Nice work — this answer includes the required SQL elements for the prompt.";
+      ? "Nice work — this answer includes the required Python elements for the question."
+      : "Nice work — this answer includes the required SQL elements for the question.";
   }
 
   return null;
@@ -64,6 +64,14 @@ export default function WarmupQuestion({
   const [checkResult, setCheckResult] = useState<TrackCheckResult | null>(null);
   const [isPending, startTransition] = useTransition();
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  function clearAttempt() {
+    setAnswer("");
+    setMessage(null);
+    setError(null);
+    setCheckResult(null);
+    setIsSubmitted(false);
+  }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -117,20 +125,31 @@ export default function WarmupQuestion({
           value={answer}
           onChange={(e) => setAnswer(e.target.value)}
           placeholder={getPlaceholder(track)}
-          disabled={isSubmitted}
+          disabled={false}
         />
 
-        <button
-          type="submit"
-          disabled={isPending || isSubmitted}
-          className="inline-flex cursor-pointer items-center justify-center rounded border px-5 py-2.5 text-base font-medium transition hover:bg-gray-100 active:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {isPending
-            ? "Submitting..."
-            : isSubmitted
-              ? "Submitted"
-              : "Submit Attempt"}
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="submit"
+            disabled={isPending || isSubmitted}
+            className="inline-flex cursor-pointer items-center justify-center rounded border px-5 py-2.5 text-base font-medium transition hover:bg-gray-100 active:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isPending
+              ? "Submitting..."
+              : isSubmitted
+                ? "Submitted"
+                : "Submit Attempt"}
+          </button>
+
+          <button
+            type="button"
+            onClick={clearAttempt}
+            disabled={isPending}
+            className="inline-flex cursor-pointer items-center justify-center rounded border bg-white px-5 py-2.5 text-base font-medium transition hover:bg-gray-100 active:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Clear Attempt
+          </button>
+        </div>
       </form>
 
       {message && <p className="mt-3 text-green-700">{message}</p>}

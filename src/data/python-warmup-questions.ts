@@ -8,7 +8,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     promptText:
       "Write a function named add_numbers that takes a and b and returns their sum.",
     expectedFunctionName: "add_numbers",
-    requiredTokens: ["def add_numbers", "return", "a + b"],
+    requiredTokens: ["def add_numbers", "return", "+"],
     acceptedPatterns: [
       "def add_numbers(a, b): return a + b",
       "def add_numbers(a,b): return a+b",
@@ -21,7 +21,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     promptText:
       "Write a function named is_even that takes n and returns True if n is even, otherwise False.",
     expectedFunctionName: "is_even",
-    requiredTokens: ["def is_even", "return", "n % 2", "== 0"],
+    requiredTokens: ["def is_even", "return", "%", "== 0"],
     acceptedPatterns: [
       "def is_even(n): return n % 2 == 0",
       "def is_even(n): return (n % 2) == 0",
@@ -34,7 +34,10 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     promptText:
       "Write a function named first_item that takes a list items and returns the first element.",
     expectedFunctionName: "first_item",
-    requiredTokens: ["def first_item", "return", "items[0]"],
+    requiredTokens: ["def first_item", "return", "[0]"],
+    acceptedPatterns: [
+      "def first_item(items): return items[0]",
+    ],
   },
   {
     track: "python",
@@ -43,7 +46,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     promptText:
       "Write a function named reverse_string that takes a string text and returns the reversed string.",
     expectedFunctionName: "reverse_string",
-    requiredTokens: ["def reverse_string", "return", "text"],
+    requiredTokens: ["def reverse_string", "return"],
     acceptedPatterns: [
       "def reverse_string(text): return text[::-1]",
       "def reverse_string(text): return text[:: -1]",
@@ -56,7 +59,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     promptText:
       "Write a function named sum_list that takes a list of numbers and returns the total.",
     expectedFunctionName: "sum_list",
-    requiredTokens: ["def sum_list", "return", "sum("],
+    requiredTokens: ["def sum_list", "return"],
     acceptedPatterns: [
       "def sum_list(numbers): return sum(numbers)",
       "def sum_list(nums): return sum(nums)",
@@ -69,7 +72,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     promptText:
       "Write a function named find_max that takes a list of numbers and returns the largest value.",
     expectedFunctionName: "find_max",
-    requiredTokens: ["def find_max", "return", "max("],
+    requiredTokens: ["def find_max", "return"],
     acceptedPatterns: [
       "def find_max(numbers): return max(numbers)",
       "def find_max(nums): return max(nums)",
@@ -107,7 +110,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     promptText:
       "Write a function named count_vowels that takes a string text and returns the number of vowels in it.",
     expectedFunctionName: "count_vowels",
-    requiredTokens: ["def count_vowels", "for", "return", "text"],
+    requiredTokens: ["def count_vowels", "for", "return"],
     acceptedPatterns: [
       "def count_vowels(text): return sum(1 for ch in text if ch.lower() in 'aeiou')",
     ],
@@ -119,12 +122,11 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     promptText:
       "Write a function named contains_value that takes a list items and a target value and returns True if target is in the list, otherwise False.",
     expectedFunctionName: "contains_value",
-    requiredTokens: ["def contains_value", "return", "target in items"],
+    requiredTokens: ["def contains_value", "return", "in"],
     acceptedPatterns: [
       "def contains_value(items, target): return target in items",
     ],
   },
-
   {
     track: "python",
     slug: "string-length",
@@ -132,9 +134,10 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     promptText:
       "Write a function named string_length that takes a string text and returns its length.",
     expectedFunctionName: "string_length",
-    requiredTokens: ["def string_length", "return", "len(", "text"],
+    requiredTokens: ["def string_length", "return"],
     acceptedPatterns: [
       "def string_length(text): return len(text)",
+      "def string_length(s): return len(s)",
     ],
   },
   {
@@ -144,7 +147,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     promptText:
       "Write a function named normalize_text that takes a string text and returns the lowercase version with leading and trailing spaces removed.",
     expectedFunctionName: "normalize_text",
-    requiredTokens: ["def normalize_text", "return", "text", ".strip()", ".lower()"],
+    requiredTokens: ["def normalize_text", "return", ".strip()", ".lower()"],
     acceptedPatterns: [
       "def normalize_text(text): return text.strip().lower()",
       "def normalize_text(text): return text.lower().strip()",
@@ -157,9 +160,10 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     promptText:
       "Write a function named get_score that takes a dictionary scores and a name, and returns the value for that name.",
     expectedFunctionName: "get_score",
-    requiredTokens: ["def get_score", "return", "scores", "[", "name"],
+    requiredTokens: ["def get_score", "return"],
     acceptedPatterns: [
       "def get_score(scores, name): return scores[name]",
+      "def get_score(scores, name): return scores.get(name, 0)",
     ],
   },
   {
@@ -169,7 +173,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     promptText:
       "Write a function named has_key that takes a dictionary data and a key, and returns True if the key exists in the dictionary, otherwise False.",
     expectedFunctionName: "has_key",
-    requiredTokens: ["def has_key", "return", "key in data"],
+    requiredTokens: ["def has_key", "return", "in"],
     acceptedPatterns: [
       "def has_key(data, key): return key in data",
     ],
@@ -181,7 +185,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     promptText:
       "Write a function named unique_items that takes a list items and returns a set of the unique values.",
     expectedFunctionName: "unique_items",
-    requiredTokens: ["def unique_items", "return", "set(", "items"],
+    requiredTokens: ["def unique_items", "return", "set("],
     acceptedPatterns: [
       "def unique_items(items): return set(items)",
     ],
@@ -193,10 +197,14 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     promptText:
       "Write a function named has_duplicate that takes a list items and returns True if any value appears more than once, otherwise False.",
     expectedFunctionName: "has_duplicate",
-    requiredTokens: ["def has_duplicate", "return", "len(", "set(", "items"],
+    requiredTokens: ["def has_duplicate", "return"],
     acceptedPatterns: [
       "def has_duplicate(items): return len(set(items)) != len(items)",
       "def has_duplicate(items): return len(set(items)) < len(items)",
+      "def has_duplicate(nums): return len(set(nums)) != len(nums)",
+      "def has_duplicate(nums): return len(set(nums)) < len(nums)",
+      "def has_duplicate(items): seen = set(); for item in items: if item in seen: return True; seen.add(item); return False",
+      "def has_duplicate(nums): seen = set(); for n in nums: if n in seen: return True; seen.add(n); return False",
     ],
   },
   {
