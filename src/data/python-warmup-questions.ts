@@ -82,7 +82,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     promptText:
       "Write a function named filter_evens that takes a list of numbers and returns a new list containing only the even numbers.",
     expectedFunctionName: "filter_evens",
-    requiredTokens: ["def filter_evens", "return", "for", "% 2", "== 0"],
+    requiredTokens: ["def filter_evens", "return"],
     acceptedPatterns: [
       "def filter_evens(numbers): return [n for n in numbers if n % 2 == 0]",
       "def filter_evens(nums): return [n for n in nums if n % 2 == 0]",
@@ -95,13 +95,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     promptText:
       "Write a function named count_items that takes a list items and returns a dictionary with counts for each item.",
     expectedFunctionName: "count_items",
-    requiredTokens: [
-      "def count_items",
-      "for",
-      "return",
-      "counts",
-      ".get(",
-    ],
+    requiredTokens: ["def count_items", "for", "return", "counts", ".get("],
     acceptedPatterns: [
       "def count_items(items): counts = {}; for item in items: counts[item] = counts.get(item, 0) + 1; return counts",
     ],
@@ -128,6 +122,107 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
     requiredTokens: ["def contains_value", "return", "target in items"],
     acceptedPatterns: [
       "def contains_value(items, target): return target in items",
+    ],
+  },
+
+  {
+    track: "python",
+    slug: "string-length",
+    title: "String Length",
+    promptText:
+      "Write a function named string_length that takes a string text and returns its length.",
+    expectedFunctionName: "string_length",
+    requiredTokens: ["def string_length", "return", "len(", "text"],
+    acceptedPatterns: [
+      "def string_length(text): return len(text)",
+    ],
+  },
+  {
+    track: "python",
+    slug: "normalize-text",
+    title: "Normalize Text",
+    promptText:
+      "Write a function named normalize_text that takes a string text and returns the lowercase version with leading and trailing spaces removed.",
+    expectedFunctionName: "normalize_text",
+    requiredTokens: ["def normalize_text", "return", "text", ".strip()", ".lower()"],
+    acceptedPatterns: [
+      "def normalize_text(text): return text.strip().lower()",
+      "def normalize_text(text): return text.lower().strip()",
+    ],
+  },
+  {
+    track: "python",
+    slug: "get-score",
+    title: "Dictionary Lookup",
+    promptText:
+      "Write a function named get_score that takes a dictionary scores and a name, and returns the value for that name.",
+    expectedFunctionName: "get_score",
+    requiredTokens: ["def get_score", "return", "scores", "[", "name"],
+    acceptedPatterns: [
+      "def get_score(scores, name): return scores[name]",
+    ],
+  },
+  {
+    track: "python",
+    slug: "has-key",
+    title: "Check Dictionary Key",
+    promptText:
+      "Write a function named has_key that takes a dictionary data and a key, and returns True if the key exists in the dictionary, otherwise False.",
+    expectedFunctionName: "has_key",
+    requiredTokens: ["def has_key", "return", "key in data"],
+    acceptedPatterns: [
+      "def has_key(data, key): return key in data",
+    ],
+  },
+  {
+    track: "python",
+    slug: "unique-items",
+    title: "Unique Items with Set",
+    promptText:
+      "Write a function named unique_items that takes a list items and returns a set of the unique values.",
+    expectedFunctionName: "unique_items",
+    requiredTokens: ["def unique_items", "return", "set(", "items"],
+    acceptedPatterns: [
+      "def unique_items(items): return set(items)",
+    ],
+  },
+  {
+    track: "python",
+    slug: "has-duplicate",
+    title: "Detect Duplicate",
+    promptText:
+      "Write a function named has_duplicate that takes a list items and returns True if any value appears more than once, otherwise False.",
+    expectedFunctionName: "has_duplicate",
+    requiredTokens: ["def has_duplicate", "return", "len(", "set(", "items"],
+    acceptedPatterns: [
+      "def has_duplicate(items): return len(set(items)) != len(items)",
+      "def has_duplicate(items): return len(set(items)) < len(items)",
+    ],
+  },
+  {
+    track: "python",
+    slug: "square-list",
+    title: "Square a List",
+    promptText:
+      "Write a function named square_list that takes a list of numbers and returns a new list containing the square of each value.",
+    expectedFunctionName: "square_list",
+    requiredTokens: ["def square_list", "return"],
+    acceptedPatterns: [
+      "def square_list(numbers): return [n * n for n in numbers]",
+      "def square_list(nums): return [n * n for n in nums]",
+    ],
+  },
+  {
+    track: "python",
+    slug: "sort-numbers",
+    title: "Sort Numbers",
+    promptText:
+      "Write a function named sort_numbers that takes a list of numbers and returns a sorted version of the list.",
+    expectedFunctionName: "sort_numbers",
+    requiredTokens: ["def sort_numbers", "return", "sorted("],
+    acceptedPatterns: [
+      "def sort_numbers(numbers): return sorted(numbers)",
+      "def sort_numbers(nums): return sorted(nums)",
     ],
   },
 ];
