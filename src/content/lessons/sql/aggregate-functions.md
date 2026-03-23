@@ -17,7 +17,7 @@ SELECT COUNT(*) AS user_count
 FROM users;
 ```
 
-This returns the total number of rows in the table.
+This returns the total number of rows in the `users` table.
 
 ## Another Example
 

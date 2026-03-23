@@ -9,7 +9,7 @@ SELECT name, age
 FROM users;
 ```
 
-This query returns the name and age columns from the users table.
+This query returns the `name` and `age` columns from the `users` table.
 
 ## Why it matters
 
