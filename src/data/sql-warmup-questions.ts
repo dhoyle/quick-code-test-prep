@@ -149,9 +149,12 @@ export const SQL_WARMUP_QUESTIONS: SqlQuestion[] = [
       "when",
       "age < 18",
       "then 'minor'",
-      "else 'adult'",
       "end as age_group",
       "from users",
+    ],
+    acceptedPatterns: [
+      "select name, case when age < 18 then 'minor' else 'adult' end as age_group from users",
+      "select name, case when age < 18 then 'minor' when age >= 18 then 'adult' end as age_group from users",
     ],
   },
   {

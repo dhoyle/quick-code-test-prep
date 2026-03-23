@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getTrackBySlug } from "@/db/tracks";
 import TimedTest from "@/components/timed/timed-test";
-import { getTimedQuestionsForTrack } from "@/data/question-bank";
+import { getWarmupQuestionsForTrack } from "@/data/question-bank";
 
 type PageProps = {
   params: Promise<{ track: string; sessionId: string }>;
@@ -77,18 +77,12 @@ export default async function TimedStartPage({ params }: PageProps) {
     ? session.question_slugs
     : [];
 
-  const questionMap = new Map(
-    getTimedQuestionsForTrack(track).map((q) => [q.slug, q])
-  );
+  const allQuestions = getWarmupQuestionsForTrack(track);
+  const questionMap = new Map(allQuestions.map((q) => [q.slug, q]));
 
   const questions = questionSlugs
     .map((slug: unknown) => questionMap.get(String(slug)))
-    .filter(
-      (
-        q: ReturnType<typeof getTimedQuestionsForTrack>[number] | undefined
-      ): q is ReturnType<typeof getTimedQuestionsForTrack>[number] =>
-        q !== undefined
-    );
+    .filter((q): q is (typeof allQuestions)[number] => q !== undefined);
 
   return (
     <div>

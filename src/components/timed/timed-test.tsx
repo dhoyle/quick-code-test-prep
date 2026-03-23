@@ -1,9 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { checkTrackAttempt } from "@/lib/track-checker";
 import { saveTimedTest } from "@/actions/save-timed-test";
-import type { TrackQuestion } from "@/lib/question-types";
+import type {
+  QuestionDifficulty,
+  TrackQuestion,
+} from "@/lib/question-types";
+import {
+  getDifficultyClasses,
+  getDifficultyLabel,
+} from "@/data/question-bank";
 
 type Props = {
   track: string;
@@ -17,6 +25,7 @@ type PerQuestionResult = {
   slug: string;
   title: string;
   promptText: string;
+  difficulty: QuestionDifficulty;
   userAnswer: string;
   score: number;
   isCorrect: boolean;
@@ -55,6 +64,26 @@ function getPlaceholder(track: string) {
   return track === "python"
     ? "Write your Python function here..."
     : "Write your SQL query here...";
+}
+
+function getDifficultySummary(questions: TrackQuestion[]) {
+  const counts = {
+    easy: 0,
+    medium: 0,
+    hard: 0,
+  };
+
+  for (const question of questions) {
+    counts[question.difficulty] += 1;
+  }
+
+  return [
+    counts.easy > 0 ? `${counts.easy} Easy` : null,
+    counts.medium > 0 ? `${counts.medium} Medium` : null,
+    counts.hard > 0 ? `${counts.hard} Hard` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 export default function TimedTest({
@@ -158,6 +187,7 @@ export default function TimedTest({
         slug: question.slug,
         title: question.title,
         promptText: question.promptText,
+        difficulty: question.difficulty,
         userAnswer: answer,
         score: result.score,
         isCorrect: result.isCorrect,
@@ -211,6 +241,11 @@ export default function TimedTest({
     return Math.round(total / results.length);
   }, [results]);
 
+  const difficultySummary = useMemo(
+    () => getDifficultySummary(questions),
+    [questions]
+  );
+
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
 
@@ -232,9 +267,15 @@ export default function TimedTest({
           {results.map((result, index) => (
             <div key={result.slug} className="rounded border p-4">
               <div className="flex items-center justify-between gap-4">
-                <p className="font-medium">
-                  {index + 1}. {result.title}
-                </p>
+                <div className="flex items-center gap-3">
+                  <p className="font-medium">
+                    {index + 1}. {result.title}
+                  </p>
+                  <span className={getDifficultyClasses(result.difficulty)}>
+                    {getDifficultyLabel(result.difficulty)}
+                  </span>
+                </div>
+
                 <p
                   className={
                     result.isCorrect
@@ -244,6 +285,10 @@ export default function TimedTest({
                 >
                   {result.isCorrect ? "Correct" : "Needs work"} — {result.score}%
                 </p>
+              </div>
+
+              <div className="prose mt-3 max-w-none prose-p:my-0 prose-code:before:content-none prose-code:after:content-none prose-code:rounded prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:font-mono prose-code:font-normal prose-code:text-[1em]">
+                <ReactMarkdown>{result.promptText}</ReactMarkdown>
               </div>
 
               <pre className="mt-3 whitespace-pre-wrap rounded bg-gray-50 p-3 font-mono text-sm">
@@ -317,6 +362,13 @@ export default function TimedTest({
             {String(seconds).padStart(2, "0")}
           </p>
         </div>
+
+        {difficultySummary && (
+          <p className="mt-2 text-sm font-medium text-gray-700">
+            This test includes: {difficultySummary}
+          </p>
+        )}
+
         <p className="mt-2 text-sm text-gray-600">
           Answer all questions before time runs out. The test will auto-submit at
           00:00.
@@ -329,8 +381,17 @@ export default function TimedTest({
             <p className="text-sm text-gray-500">
               Question {index + 1} of {questions.length}
             </p>
-            <h3 className="mt-1 text-lg font-semibold">{question.title}</h3>
-            <p className="mt-2 text-gray-700">{question.promptText}</p>
+
+            <div className="mt-1 flex items-center justify-between gap-4">
+              <h3 className="text-lg font-semibold">{question.title}</h3>
+              <span className={getDifficultyClasses(question.difficulty)}>
+                {getDifficultyLabel(question.difficulty)}
+              </span>
+            </div>
+
+            <div className="prose mt-3 max-w-none prose-p:my-0 prose-code:before:content-none prose-code:after:content-none prose-code:rounded prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:font-mono prose-code:font-normal prose-code:text-[1em]">
+              <ReactMarkdown>{question.promptText}</ReactMarkdown>
+            </div>
 
             <textarea
               className="mt-4 min-h-[140px] w-full rounded border p-3 font-mono text-sm"
@@ -347,7 +408,7 @@ export default function TimedTest({
       <button
         type="button"
         onClick={() => void handleSubmit()}
-        className="inline-flex cursor-pointer items-center justify-center rounded border px-4 py-2 text-sm font-medium transition hover:bg-gray-100 active:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+        className="inline-flex cursor-pointer items-center justify-center rounded border bg-white px-5 py-2.5 text-base font-medium transition hover:bg-gray-100 active:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
       >
         Submit Timed Test
       </button>

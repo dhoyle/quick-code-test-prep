@@ -11,7 +11,7 @@ ORDER BY score DESC
 LIMIT 10;
 ```
 
-This returns the top 10 scores.
+This returns the top 10 users from the `leaderboard` table by score.
 
 `DESC` sorts results in descending order, while `ASC` sorts them in ascending order.
 
