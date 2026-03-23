@@ -401,6 +401,16 @@ export default function TimedTest({
               }
               placeholder={getPlaceholder(track)}
             />
+
+            <div className="mt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() => handleAnswerChange(question.slug, "")}
+                className="rounded border bg-white px-3 py-1.5 text-sm font-medium transition hover:bg-gray-100 active:bg-gray-200"
+              >
+                Clear
+              </button>
+            </div>
           </div>
         ))}
       </div>

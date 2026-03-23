@@ -147,7 +147,7 @@ export default function WarmupQuestion({
             disabled={isPending}
             className="inline-flex cursor-pointer items-center justify-center rounded border bg-white px-5 py-2.5 text-base font-medium transition hover:bg-gray-100 active:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Clear Attempt
+            Clear
           </button>
         </div>
       </form>
