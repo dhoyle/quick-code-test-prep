@@ -19,18 +19,18 @@ function getTrackLabel(track: string) {
 
 function getTrackValueProp(track: string) {
   if (track === "python") {
-    return "Practice common Python interview questions with instant feedback and timed drills.";
+    return "Build confidence with core Python concepts, warmup tests based on common interview questions, and timed test simulation.";
   }
 
-  return "Build confidence with core SQL concepts, guided practice, and timed test simulation.";
+  return "Build confidence with core SQL concepts, warmup tests based on common interview questions, and timed test simulation.";
 }
 
-function getSuggestedPath(track: string) {
+function getTrackOutcomeMessage(track: string) {
   if (track === "python") {
-    return "New to Python or need a refresher? Review key concepts in the crash course, build confidence with warmup tests, and then simulate a real assessment with a timed test.";
+    return "Prepare for your Python coding screen in under 2 hours. Review key concepts in the crash course, build confidence with warmup tests based on common interview questions, and simulate a real assessment with a timed test so you don’t freeze when it matters.";
   }
 
-  return "New to SQL or need a refresher? Review key concepts in the crash course, build confidence with warmup tests, and then simulate a real assessment with a timed test.";
+  return "Prepare for your SQL coding screen in under 2 hours. Review key concepts in the crash course, build confidence with warmup tests based on common interview questions, and simulate a real assessment with a timed test so you don’t freeze when it matters.";
 }
 
 function getWarmupChipClasses(completed: number, total: number) {
@@ -98,7 +98,6 @@ export default async function TrackPage({ params }: PageProps) {
         </Link>
       </p>
 
-      {/* HERO */}
       <section className="mt-6 rounded border bg-gray-50 p-6">
         <p className="text-sm font-medium uppercase tracking-wide text-gray-500">
           {getTrackLabel(track)} Track
@@ -111,7 +110,7 @@ export default async function TrackPage({ params }: PageProps) {
         </p>
 
         <p className="mt-4 max-w-3xl text-base text-gray-600">
-          {getSuggestedPath(track)}
+          {getTrackOutcomeMessage(track)}
         </p>
 
         <div className="mt-4 flex flex-wrap gap-3">
@@ -156,9 +155,7 @@ export default async function TrackPage({ params }: PageProps) {
         </div>
       </section>
 
-      {/* LOWER SECTIONS */}
       <section className="mt-8 grid gap-6 md:grid-cols-2">
-        {/* Crash Course */}
         <div className="rounded border bg-gray-50 p-6">
           <h2 className="text-xl font-semibold">Crash Course</h2>
           <p className="mt-2 text-base text-gray-600">
@@ -184,13 +181,12 @@ export default async function TrackPage({ params }: PageProps) {
           </ul>
         </div>
 
-        {/* Practice */}
         <div className="space-y-6">
           <div className="rounded border bg-gray-50 p-6">
             <h2 className="text-xl font-semibold">Warmup Tests</h2>
             <p className="mt-2 text-base text-gray-600">
-              Untimed practice questions with instant feedback. Best for building
-              confidence and learning the patterns.
+              Untimed practice questions with instant feedback. Best for
+              building confidence and learning the patterns.
             </p>
 
             <div className="mt-4">

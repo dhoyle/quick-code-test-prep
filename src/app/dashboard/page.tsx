@@ -82,9 +82,25 @@ export default async function DashboardPage() {
             <h1 className="text-3xl font-bold">Dashboard</h1>
 
             <p className="mt-3 text-base text-gray-700">
-              Practice interview-style SQL and Python questions with a mix of
-              crash-course lessons, warmup tests, and timed practice.
+              Prepare for coding tests quickly with focused practice and
+              realistic test simulation.
             </p>
+
+            <div className="mt-6 rounded border bg-white p-5">
+              <p className="text-base font-medium text-gray-900">
+                How it works
+              </p>
+
+              <ul className="mt-3 space-y-2 text-gray-700">
+                <li>• Review key concepts in a crash course</li>
+                <li>• Build confidence with warmup tests</li>
+                <li>• Simulate a real interview with a timed test</li>
+              </ul>
+
+              <p className="mt-4 text-base text-gray-600">
+                Most users can complete a full prep cycle in under 2 hours.
+              </p>
+            </div>
 
             <p className="mt-4 text-base text-gray-600">
               Signed in as: {user.email}
