@@ -1,7 +1,10 @@
+export type QuestionDifficulty = "easy" | "medium" | "hard";
+
 export type BaseQuestion = {
   slug: string;
   title: string;
   promptText: string;
+  difficulty: QuestionDifficulty;
 };
 
 export type SqlQuestion = BaseQuestion & {

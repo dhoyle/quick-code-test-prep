@@ -3,6 +3,7 @@ import type { PythonQuestion } from "@/lib/question-types";
 export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
   {
     track: "python",
+    difficulty: "easy",
     slug: "add-two-numbers",
     title: "Add Two Numbers",
     promptText:
@@ -16,42 +17,40 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
   },
   {
     track: "python",
+    difficulty: "easy",
     slug: "is-even",
     title: "Check Even Number",
     promptText:
       "Write a function named `is_even` that takes `n` and returns `True` if `n` is even, otherwise `False`.",
     expectedFunctionName: "is_even",
     requiredTokens: ["def is_even", "return", "%", "== 0"],
-    acceptedPatterns: [
-      "def is_even(n): return n % 2 == 0",
-    ],
+    acceptedPatterns: ["def is_even(n): return n % 2 == 0"],
   },
   {
     track: "python",
+    difficulty: "easy",
     slug: "first-item",
     title: "First Item in List",
     promptText:
       "Write a function named `first_item` that takes a list `items` and returns the first element.",
     expectedFunctionName: "first_item",
     requiredTokens: ["def first_item", "return", "[0]"],
-    acceptedPatterns: [
-      "def first_item(items): return items[0]",
-    ],
+    acceptedPatterns: ["def first_item(items): return items[0]"],
   },
   {
     track: "python",
+    difficulty: "medium",
     slug: "reverse-string",
     title: "Reverse String",
     promptText:
       "Write a function named `reverse_string` that takes a string `text` and returns the reversed string.",
     expectedFunctionName: "reverse_string",
     requiredTokens: ["def reverse_string", "return"],
-    acceptedPatterns: [
-      "def reverse_string(text): return text[::-1]",
-    ],
+    acceptedPatterns: ["def reverse_string(text): return text[::-1]"],
   },
   {
     track: "python",
+    difficulty: "easy",
     slug: "sum-list",
     title: "Sum a List",
     promptText:
@@ -65,6 +64,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
   },
   {
     track: "python",
+    difficulty: "medium",
     slug: "find-max",
     title: "Find Maximum",
     promptText:
@@ -78,6 +78,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
   },
   {
     track: "python",
+    difficulty: "medium",
     slug: "filter-evens",
     title: "Filter Even Numbers",
     promptText:
@@ -91,6 +92,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
   },
   {
     track: "python",
+    difficulty: "medium",
     slug: "count-items",
     title: "Count Items with Dictionary",
     promptText:
@@ -103,6 +105,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
   },
   {
     track: "python",
+    difficulty: "medium",
     slug: "count-vowels",
     title: "Count Vowels",
     promptText:
@@ -115,6 +118,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
   },
   {
     track: "python",
+    difficulty: "easy",
     slug: "contains-value",
     title: "Check List Contains Value",
     promptText:
@@ -127,6 +131,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
   },
   {
     track: "python",
+    difficulty: "easy",
     slug: "string-length",
     title: "String Length",
     promptText:
@@ -140,6 +145,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
   },
   {
     track: "python",
+    difficulty: "medium",
     slug: "normalize-text",
     title: "Normalize Text",
     promptText:
@@ -153,6 +159,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
   },
   {
     track: "python",
+    difficulty: "easy",
     slug: "get-score",
     title: "Dictionary Lookup",
     promptText:
@@ -166,30 +173,29 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
   },
   {
     track: "python",
+    difficulty: "easy",
     slug: "has-key",
     title: "Check Dictionary Key",
     promptText:
       "Write a function named `has_key` that takes a dictionary `data` and a `key`, and returns `True` if the key exists in the dictionary, otherwise `False`.",
     expectedFunctionName: "has_key",
     requiredTokens: ["def has_key", "return", "in"],
-    acceptedPatterns: [
-      "def has_key(data, key): return key in data",
-    ],
+    acceptedPatterns: ["def has_key(data, key): return key in data"],
   },
   {
     track: "python",
+    difficulty: "hard",
     slug: "unique-items",
     title: "Unique Items with Set",
     promptText:
       "Write a function named `unique_items` that takes a list `items` and returns a set of the unique values.",
     expectedFunctionName: "unique_items",
     requiredTokens: ["def unique_items", "return", "set("],
-    acceptedPatterns: [
-      "def unique_items(items): return set(items)",
-    ],
+    acceptedPatterns: ["def unique_items(items): return set(items)"],
   },
   {
     track: "python",
+    difficulty: "hard",
     slug: "has-duplicate",
     title: "Detect Duplicate",
     promptText:
@@ -207,6 +213,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
   },
   {
     track: "python",
+    difficulty: "medium",
     slug: "square-list",
     title: "Square a List",
     promptText:
@@ -223,6 +230,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
 
   {
     track: "python",
+    difficulty: "medium",
     slug: "reverse-words",
     title: "Reverse Words",
     promptText:
@@ -236,18 +244,18 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
   },
   {
     track: "python",
+    difficulty: "hard",
     slug: "is-palindrome",
     title: "Check Palindrome",
     promptText:
       "Write a function named `is_palindrome` that takes a string `text` and returns `True` if it reads the same forward and backward.",
     expectedFunctionName: "is_palindrome",
     requiredTokens: ["def is_palindrome", "return"],
-    acceptedPatterns: [
-      "def is_palindrome(text): return text == text[::-1]",
-    ],
+    acceptedPatterns: ["def is_palindrome(text): return text == text[::-1]"],
   },
   {
     track: "python",
+    difficulty: "medium",
     slug: "count-character",
     title: "Count Character",
     promptText:
@@ -260,18 +268,18 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
   },
   {
     track: "python",
+    difficulty: "medium",
     slug: "smallest-number",
     title: "Find Smallest Number",
     promptText:
       "Write a function named `smallest_number` that takes a list of numbers and returns the smallest value.",
     expectedFunctionName: "smallest_number",
     requiredTokens: ["def smallest_number", "return"],
-    acceptedPatterns: [
-      "def smallest_number(nums): return min(nums)",
-    ],
+    acceptedPatterns: ["def smallest_number(nums): return min(nums)"],
   },
   {
     track: "python",
+    difficulty: "hard",
     slug: "remove-duplicates",
     title: "Remove Duplicates",
     promptText:
@@ -284,18 +292,18 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
   },
   {
     track: "python",
+    difficulty: "medium",
     slug: "merge-lists",
     title: "Merge Two Lists",
     promptText:
       "Write a function named `merge_lists` that takes two lists `a` and `b` and returns a combined list.",
     expectedFunctionName: "merge_lists",
     requiredTokens: ["def merge_lists", "return"],
-    acceptedPatterns: [
-      "def merge_lists(a, b): return a + b",
-    ],
+    acceptedPatterns: ["def merge_lists(a, b): return a + b"],
   },
   {
     track: "python",
+    difficulty: "hard",
     slug: "invert-dictionary",
     title: "Invert Dictionary",
     promptText:
@@ -308,6 +316,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
   },
   {
     track: "python",
+    difficulty: "hard",
     slug: "double-evens",
     title: "Double Even Numbers",
     promptText:
@@ -320,6 +329,7 @@ export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
   },
   {
     track: "python",
+    difficulty: "medium",
     slug: "sum-even-numbers",
     title: "Sum Even Numbers",
     promptText:

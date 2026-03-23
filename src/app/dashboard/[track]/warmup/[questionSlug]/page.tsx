@@ -6,7 +6,11 @@ import { getTrackBySlug } from "@/db/tracks";
 import { getRecentAttempts } from "@/db/attempts";
 import WarmupQuestion from "@/components/warmup/warmup-question";
 import AttemptHistory from "@/components/attempts/attempt-history";
-import { getWarmupQuestionsForTrack } from "@/data/question-bank";
+import {
+  getDifficultyClasses,
+  getDifficultyLabel,
+  getWarmupQuestionsForTrack,
+} from "@/data/question-bank";
 
 type PageProps = {
   params: Promise<{
@@ -61,7 +65,13 @@ export default async function WarmupQuestionPage({ params }: PageProps) {
         Question {questionIndex + 1} of {questions.length}
       </p>
 
-      <h1 className="mt-2 text-2xl font-bold">{question.title}</h1>
+      <div className="mt-2 flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold">{question.title}</h1>
+
+        <span className={getDifficultyClasses(question.difficulty)}>
+          {getDifficultyLabel(question.difficulty)}
+        </span>
+      </div>
 
       <div className="prose mt-3 max-w-none prose-p:my-0 prose-code:before:content-none prose-code:after:content-none prose-code:rounded prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:font-mono prose-code:font-normal prose-code:text-[1em]">
         <ReactMarkdown>{question.promptText}</ReactMarkdown>
