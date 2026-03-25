@@ -82,7 +82,10 @@ export default async function TimedStartPage({ params }: PageProps) {
 
   const questions = questionSlugs
     .map((slug: unknown) => questionMap.get(String(slug)))
-    .filter((q): q is (typeof allQuestions)[number] => q !== undefined);
+    .filter(
+      (q: (typeof allQuestions)[number] | undefined): q is (typeof allQuestions)[number] =>
+        q !== undefined
+    );
 
   return (
     <div>
