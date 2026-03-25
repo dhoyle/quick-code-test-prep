@@ -100,4 +100,4 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 
 ## License
 
-[MIT](https://mit-license.org/)
+MIT — see [LICENSE](./LICENSE)
