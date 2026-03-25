@@ -3,7 +3,7 @@
 A lightweight interview prep platform for SQL and Python built with Next.js, Supabase, and deployed on Vercel.
 
 ## 🌐 Live Demo
-[Add your Vercel URL here]
+[Quick Code Test Prep](https://quick-code-test-prep.vercel.app/)
 
 ## 🧠 Why This Project Exists
 
