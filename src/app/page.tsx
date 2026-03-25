@@ -7,7 +7,7 @@ export default function HomePage() {
         {/* HERO */}
         <section className="text-center space-y-6">
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
-            Practice SQL interview skills without the noise
+            Practice SQL and Python interview code tests without the noise
           </h1>
 
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
@@ -65,7 +65,7 @@ export default function HomePage() {
           </h2>
 
           <ul className="max-w-xl mx-auto text-gray-700 space-y-3 text-center">
-            <li>Crash Course for core SQL concepts</li>
+            <li>Crash Courses for core SQL and Python concepts</li>
             <li>Warmup tests for low-pressure practice</li>
             <li>Timed tests to simulate interviews</li>
             <li>Authentication + session tracking</li>
