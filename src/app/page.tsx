@@ -23,7 +23,7 @@ export default function HomePage() {
               View Demo
             </a>
             <a
-              href="https://github.com/your-username/quick-code-test-prep"
+              href="https://github.com/dhoyle/quick-code-test-prep"
               target="_blank"
               className="px-6 py-3 rounded-lg border border-gray-300 hover:bg-gray-100 transition"
             >
