@@ -49,6 +49,13 @@ export default async function DashboardPage() {
 
   const tracks = await getTracks();
 
+  // ✅ Ensure SQL appears first
+  const orderedTracks = [...tracks].sort((a, b) => {
+    if (a.slug === "sql") return -1;
+    if (b.slug === "sql") return 1;
+    return 0;
+  });
+
   const trackProgress = await Promise.all(
     tracks.map(async (track) => {
       const warmupQuestions = getWarmupQuestionsForTrack(track.slug);
@@ -116,7 +123,7 @@ export default async function DashboardPage() {
             </p>
 
             <ul className="mt-6 space-y-4">
-              {tracks.map((track) => {
+              {orderedTracks.map((track) => {
                 const progress = progressByTrackId.get(track.id);
                 const completedWarmups = progress?.completedWarmups ?? 0;
                 const totalWarmups = progress?.totalWarmups ?? 0;
