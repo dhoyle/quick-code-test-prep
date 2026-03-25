@@ -7,7 +7,7 @@ export default function HomePage() {
         {/* HERO */}
         <section className="text-center space-y-6">
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
-            Practice SQL and Python interview code tests without the noise
+            Quickly prepare for SQL and Python interview code tests
           </h1>
 
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">

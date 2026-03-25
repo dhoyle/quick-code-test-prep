@@ -18,43 +18,25 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (!signInError) {
-      setLoading(false);
-      router.push("/dashboard");
-      router.refresh();
-      return;
-    }
-
-    const { error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-
-    if (signUpError) {
-      setLoading(false);
-      setError(signUpError.message);
-      return;
-    }
-
-    const { error: secondSignInError } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     setLoading(false);
 
-    if (secondSignInError) {
-      setError(secondSignInError.message);
+    if (error) {
+      setError("Invalid credentials. Use the demo account below.");
       return;
     }
 
     router.push("/dashboard");
     router.refresh();
+  }
+
+  function fillDemoCredentials() {
+    setEmail("demo@quickprep.com");
+    setPassword("demoprep");
   }
 
   return (
@@ -81,7 +63,7 @@ export default function LoginPage() {
         />
 
         <button
-          className="rounded border px-4 py-2"
+          className="w-full rounded bg-black text-white px-4 py-2 hover:bg-gray-800 transition"
           type="submit"
           disabled={loading}
         >
@@ -89,8 +71,23 @@ export default function LoginPage() {
         </button>
       </form>
 
-      <p className="mt-4 text-sm text-gray-600">
-        Use any email and password to try the demo.
+      {/* Demo credentials box */}
+      <div className="mt-6 rounded-lg border bg-gray-50 p-4 text-sm text-gray-700">
+        <p className="font-medium mb-2">Demo access</p>
+        <p>Email: demo@quickprep.com</p>
+        <p>Password: demoprep</p>
+
+        <button
+          type="button"
+          onClick={fillDemoCredentials}
+          className="mt-3 text-sm underline hover:text-black"
+        >
+          Fill demo credentials
+        </button>
+      </div>
+
+      <p className="mt-4 text-sm text-gray-600 text-center">
+        Use the demo credentials above to explore the app.
       </p>
 
       {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
