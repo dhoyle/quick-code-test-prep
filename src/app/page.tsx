@@ -97,6 +97,45 @@ export default function HomePage() {
           </p>
         </section>
 
+        <section className="mt-20 max-w-3xl mx-auto space-y-4">
+          <h2 className="text-2xl font-semibold text-center">
+            Building this project
+          </h2>
+
+          <p className="text-gray-600">
+            I built Quick Code Test Prep to get hands-on with a modern web stack and
+            to better understand how AI can accelerate real product development. I
+            wanted a project that required more than static content: routing,
+            authentication, persistence, deployment, and a user flow that had to work
+            end to end.
+          </p>
+
+          <p className="text-gray-600">
+            The application uses Next.js, TypeScript, Supabase, and Vercel. Building it
+            gave me practical experience with App Router structure, protected routes,
+            production deployment, and the small implementation details that determine
+            whether an app feels usable or fragile. It also gave me a chance to work in
+            the kind of tight build-feedback loop that modern deployment platforms make
+            possible.
+          </p>
+
+          <p className="text-gray-600">
+            AI tools helped me move faster, especially when scaffolding components,
+            debugging issues, and exploring unfamiliar patterns. But they did not
+            replace judgment. I still had to decide how the app should be structured,
+            how the demo experience should work, and when a product idea was not
+            differentiated enough to justify continued investment.
+          </p>
+
+          <p className="text-gray-600">
+            That last point was one of the most valuable outcomes of the project. After
+            building an MVP, I evaluated the market and concluded that established
+            platforms already served this space well. Rather than continue expanding the
+            app, I chose to keep it as a portfolio project that demonstrates technical
+            communication, implementation, and product thinking.
+          </p>
+        </section>       
+
         {/* FOOTER */}
         <footer className="mt-24 pt-10 border-t text-center text-sm text-gray-500 space-y-2">
           <p>Built by David Hoyle</p>
