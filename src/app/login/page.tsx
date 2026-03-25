@@ -18,15 +18,27 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (!signInError) {
+      setLoading(false);
+      router.push("/dashboard");
+      router.refresh();
+      return;
+    }
+
+    const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
     });
 
     setLoading(false);
 
-    if (error) {
-      setError(error.message);
+    if (signUpError) {
+      setError(signUpError.message);
       return;
     }
 
@@ -36,7 +48,7 @@ export default function LoginPage() {
 
   return (
     <main className="mx-auto max-w-md p-8">
-      <h1 className="mb-6 text-2xl font-bold">Log in</h1>
+      <h1 className="mb-6 text-2xl font-bold">Try the demo</h1>
 
       <form onSubmit={handleLogin} className="space-y-4">
         <input
@@ -62,9 +74,13 @@ export default function LoginPage() {
           type="submit"
           disabled={loading}
         >
-          {loading ? "Logging in..." : "Log in"}
+          {loading ? "Continuing..." : "Continue"}
         </button>
       </form>
+
+      <p className="mt-4 text-sm text-gray-600">
+        Use any email and password to try the demo.
+      </p>
 
       {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
     </main>
