@@ -35,10 +35,21 @@ export default function LoginPage() {
       password,
     });
 
+    if (signUpError) {
+      setLoading(false);
+      setError(signUpError.message);
+      return;
+    }
+
+    const { error: secondSignInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
     setLoading(false);
 
-    if (signUpError) {
-      setError(signUpError.message);
+    if (secondSignInError) {
+      setError(secondSignInError.message);
       return;
     }
 
