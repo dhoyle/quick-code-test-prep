@@ -78,10 +78,9 @@ export default function HomePage() {
           <h2 className="text-2xl font-semibold">What I learned</h2>
 
           <p className="text-gray-600">
-            This project was built to get hands-on with modern frontend tools:
+            This project was built to gain hands-on experience with modern frontend tools:
             structuring a Next.js app, integrating Supabase for auth and data,
-            deploying through Vercel, and using AI tools to accelerate development
-            without outsourcing judgment.
+            deploying through Vercel, and using AI tools to accelerate development.
           </p>
         </section>
 
@@ -91,7 +90,7 @@ export default function HomePage() {
 
           <p className="text-gray-600">
             After building the MVP, I evaluated the market and found strong
-            existing platforms already serve this space well. Rather than expand
+            existing platforms that already serve this space well. Rather than expand
             the product, I’m sharing it as a portfolio project that demonstrates
             implementation, iteration, and technical decision-making.
           </p>
@@ -103,11 +102,10 @@ export default function HomePage() {
           </h2>
 
           <p className="text-gray-600">
-            I built Quick Code Test Prep to get hands-on with a modern web stack and
-            to better understand how AI can accelerate real product development. I
+            I built Quick Code Test Prep to gain hands-on experience with a modern web stack, and
+            to better understand how AI can accelerate real-world product development. I
             wanted a project that required more than static content: routing,
-            authentication, persistence, deployment, and a user flow that had to work
-            end to end.
+            authentication, persistence, deployment, and a functional end-to-end user flow.
           </p>
 
           <p className="text-gray-600">
@@ -131,7 +129,7 @@ export default function HomePage() {
             That last point was one of the most valuable outcomes of the project. After
             building an MVP, I evaluated the market and concluded that established
             platforms already served this space well. Rather than continue expanding the
-            app, I chose to keep it as a portfolio project that demonstrates technical
+            app, I decided to use it as a portfolio project that demonstrates technical
             communication, implementation, and product thinking.
           </p>
         </section>       
