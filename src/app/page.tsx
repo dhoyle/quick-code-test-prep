@@ -17,7 +17,7 @@ export default function HomePage() {
 
           <div className="flex justify-center gap-4 pt-4">
             <a
-              href="/app/sql"
+              href="/dashboard"
               className="px-6 py-3 rounded-lg bg-black text-white hover:bg-gray-800 transition"
             >
               View Demo
