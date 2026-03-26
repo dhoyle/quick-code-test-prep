@@ -120,7 +120,7 @@ export default function HomePage() {
           <p className="text-gray-600">
             AI tools helped me move faster, especially when scaffolding components,
             debugging issues, and exploring unfamiliar patterns. But they did not
-            replace judgment. I still had to decide how the app should be structured,
+            replace human judgment. I still had to decide how the app should be structured,
             how the demo experience should work, and when a product idea was not
             differentiated enough to justify continued investment.
           </p>
