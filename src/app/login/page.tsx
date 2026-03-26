@@ -26,7 +26,9 @@ export default function LoginPage() {
     setLoading(false);
 
     if (error) {
-      setError("Invalid credentials. Use the demo account or request a new user account.");
+      setError(
+        "Invalid credentials. Use the demo account or request a new user account."
+      );
       return;
     }
 
@@ -71,7 +73,17 @@ export default function LoginPage() {
         </button>
       </form>
 
-      <div className="mt-6 rounded-lg border bg-gray-50 p-4 text-sm text-gray-700">
+      {/* Helper text moved here */}
+      <p className="mt-4 text-center text-sm text-gray-600">
+        Enter your email and password, use the demo account below, or{" "}
+        <a href="/contact" className="underline hover:text-black">
+          request a new user account
+        </a>
+        .
+      </p>
+
+      {/* Demo credentials box */}
+      <div className="mt-4 rounded-lg border bg-gray-50 p-4 text-sm text-gray-700">
         <p className="mb-2 font-medium">Demo access</p>
         <p>Email: demo@quickprep.com</p>
         <p>Password: demoprep</p>
@@ -84,14 +96,6 @@ export default function LoginPage() {
           Fill demo credentials
         </button>
       </div>
-
-      <p className="mt-4 text-center text-sm text-gray-600">
-        Enter your email and password, use the demo account below, or{" "}
-        <a href="/contact" className="underline hover:text-black">
-          request a new user account
-        </a>
-        .
-      </p>
 
       {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
     </main>
