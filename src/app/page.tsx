@@ -121,14 +121,12 @@ export default function HomePage() {
             AI tools helped me move faster, especially when scaffolding components,
             debugging issues, and exploring unfamiliar patterns. But they did not
             replace human judgment. I still had to decide how the app should be structured,
-            how the demo experience should work, and when a product idea was not
-            differentiated enough to justify continued investment.
+            and how the demo user experience should work. AI was a facilitator, but the product decisions were all mine.
           </p>
 
           <p className="text-gray-600">
-            That last point was one of the most valuable outcomes of the project. After
-            building an MVP, I evaluated the market and concluded that established
-            platforms already served this space well. Rather than continue expanding the
+            After building the MVP, I evaluated the market and concluded that established
+            platforms already served this space well. Rather than continue developing the
             app, I decided to use it as a portfolio project that demonstrates technical
             communication, implementation, and product thinking.
           </p>
