@@ -103,7 +103,13 @@ In Supabase:
 
 1. Go to Project Settings.
 2. Click DATA API, then copy the API URL This will be used as the `NEXT_PUBLIC_SUPABASE_URL`.
-3. Click API Keys. Under Publishable Key, copy the API KEY. This will be used as the `NEXT_PUBLIC_SUPABASE_ANON_KEY`. If you are using a legacy anon API key, select Legacy anon, service_role API keys, then copy the anon public key. 
+3. Click API Keys. Under Publishable Key, copy the API KEY. This will be used as the `NEXT_PUBLIC_SUPABASE_ANON_KEY`. If you are using a legacy anon API key, select Legacy anon, service_role API keys, then copy the anon public key.
+
+> [!NOTE]
+> Supabase recently updated its API key structure. Use the Publishable Key unless you specifically need legacy keys.
+
+
+
 
 
 ### 4. Create environment variables 
