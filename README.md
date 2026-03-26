@@ -117,13 +117,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_API_KEY
 
 ### 5. Set up the database schema
 
-Run the SQL query in: 
-
-```bash
-/db/schema.sql
-```
-
-In the Supabase SQL editor.
+Run the SQL query in [/src/db/schema.sql](src/db/schema.sql) in the Supabase SQL editor.
 
 ### 6. Run the app
 
