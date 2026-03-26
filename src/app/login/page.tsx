@@ -26,7 +26,7 @@ export default function LoginPage() {
     setLoading(false);
 
     if (error) {
-      setError("Invalid credentials. Use the demo account below.");
+      setError("Invalid credentials. Use the demo account or request a new user account.");
       return;
     }
 
@@ -63,7 +63,7 @@ export default function LoginPage() {
         />
 
         <button
-          className="w-full rounded bg-black text-white px-4 py-2 hover:bg-gray-800 transition"
+          className="w-full rounded bg-black px-4 py-2 text-white transition hover:bg-gray-800"
           type="submit"
           disabled={loading}
         >
@@ -71,9 +71,8 @@ export default function LoginPage() {
         </button>
       </form>
 
-      {/* Demo credentials box */}
       <div className="mt-6 rounded-lg border bg-gray-50 p-4 text-sm text-gray-700">
-        <p className="font-medium mb-2">Demo access</p>
+        <p className="mb-2 font-medium">Demo access</p>
         <p>Email: demo@quickprep.com</p>
         <p>Password: demoprep</p>
 
@@ -86,8 +85,12 @@ export default function LoginPage() {
         </button>
       </div>
 
-      <p className="mt-4 text-sm text-gray-600 text-center">
-        Use the demo credentials above to explore the app.
+      <p className="mt-4 text-center text-sm text-gray-600">
+        Enter your email and password, use the demo account below, or{" "}
+        <a href="/contact" className="underline hover:text-black">
+          request a new user account
+        </a>
+        .
       </p>
 
       {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
