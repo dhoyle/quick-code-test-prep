@@ -94,16 +94,25 @@ npm install
 ```
 ### 2. Create a Supabase project
 
-1. Go to https://supabase.com
-2. Create a new project (free tier is sufficient)
+1. Go to https://supabase.com.
+2. Create a new project (free tier is sufficient).
 
 ### 3. Get your Supabase API keys
 
 In Supabase:
 
-1. Go to Project Settings.
-2. Click DATA API, then copy the API URL This will be used as the `NEXT_PUBLIC_SUPABASE_URL`.
-3. Click API Keys. Under Publishable Key, copy the API KEY. This will be used as the `NEXT_PUBLIC_SUPABASE_ANON_KEY`. If you are using a legacy anon API key, select Legacy anon, service_role API keys, then copy the anon public key.
+1. Go to **Project Settings**.
+2. Click **DATA API**, then copy the **API URL**.
+
+    → You'll use this as `NEXT_PUBLIC_SUPABASE_URL`.
+
+3. Click **API Keys**. Under **Publishable Key**, copy the **API KEY**. 
+
+    → You'll use this as `NEXT_PUBLIC_SUPABASE_ANON_KEY`. 
+
+    * If you are using a legacy anon API key:
+      * Select **Legacy anon, service_role API keys**. 
+      * Copy the **anon public** key.
 
 > [!NOTE]
 > Supabase recently updated its API key structure. Use the Publishable Key unless you specifically need legacy keys.
@@ -125,13 +134,24 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_API_KEY
 
 Run the SQL query in [/src/db/schema.sql](src/db/schema.sql) in the Supabase SQL editor.
 
-### 6. Run the app
+### 6. Create a test user in Supabase
+
+This project uses a sign-in-only flow. Before logging in locally, create a user in your Supabase project:
+
+1. In Supabase, go to **Authentication → Users**. 
+2. Click **Add user**.
+3. Create a demo user. For example:
+
+    * Email: demo@quickprep.com
+    * Password: demoprep
+
+### 7. Run the app
 
 ```bash
 npm run dev
 ```
 
-Then open `http://localhost:3000`
+Then open `http://localhost:3000` and log in using the demo user credentials. 
 
 ## License
 
