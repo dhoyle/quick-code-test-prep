@@ -26,9 +26,7 @@ export default function LoginPage() {
     setLoading(false);
 
     if (error) {
-      setError(
-        "Invalid credentials. Use the demo account or request a new user account."
-      );
+      setError("Invalid credentials. Please use the demo account or request access.");
       return;
     }
 
@@ -43,7 +41,7 @@ export default function LoginPage() {
 
   return (
     <main className="mx-auto max-w-md p-8">
-      <h1 className="mb-6 text-2xl font-bold">Try the demo</h1>
+      <h1 className="mb-6 text-2xl font-bold">Demo access</h1>
 
       <form onSubmit={handleLogin} className="space-y-4">
         <input
@@ -73,18 +71,16 @@ export default function LoginPage() {
         </button>
       </form>
 
-      {/* Helper text moved here */}
       <p className="mt-4 text-center text-sm text-gray-600">
-        Enter your email and password, use the demo account below, or{" "}
+        Use the demo account below for immediate access, or{" "}
         <a href="/contact" className="underline hover:text-black">
-          request a new user account
+          request your own account
         </a>
         .
       </p>
 
-      {/* Demo credentials box */}
       <div className="mt-4 rounded-lg border bg-gray-50 p-4 text-sm text-gray-700">
-        <p className="mb-2 font-medium">Demo access</p>
+        <p className="mb-2 font-medium">Demo account</p>
         <p>Email: demo@quickprep.com</p>
         <p>Password: demoprep</p>
 
