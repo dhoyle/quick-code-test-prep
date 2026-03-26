@@ -85,18 +85,53 @@ Rather than continue, I chose to:
 
 ## 🛠️ Local Setup
 
+### 1. Clone and install npm (Node Package Manager)
+
 ```bash
 git clone https://github.com/your-username/quick-code-test-prep.git
 cd quick-code-test-prep
 npm install
-npm run dev
 ```
-Create a .env.local file with:
+### 2. Create a Supabase project
+
+1. Go to https://supabase.com
+2. Create a new project (free tier is sufficient)
+
+### 3. Get your Supabase API keys
+
+In Supabase:
+
+1. Go to Project Settings.
+2. Click DATA API, then copy the API URL This will be used as the `NEXT_PUBLIC_SUPABASE_URL`.
+3. Click API Keys. Under Publishable Key, copy the API KEY. This will be used as the `NEXT_PUBLIC_SUPABASE_ANON_KEY`. If you are using a legacy anon API key, select Legacy anon, service_role API keys, then copy the anon public key. 
+
+
+### 4. Create environment variables 
+
+Create an `.env.local` file with:
 
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=...
-NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+NEXT_PUBLIC_SUPABASE_URL=your_API_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_API_KEY
 ```
+
+### 5. Set up the database schema
+
+Run the SQL query in: 
+
+```bash
+/db/schema.sql
+```
+
+In the Supabase SQL editor.
+
+### 6. Run the app
+
+```bash
+npm run dev
+```
+
+Then open `http://localhost:3000`
 
 ## License
 
