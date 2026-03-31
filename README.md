@@ -5,6 +5,10 @@ A lightweight interview prep platform for SQL and Python built with Next.js, Sup
 ## 🌐 Live Demo
 [Quick Code Test Prep](https://quick-code-test-prep.vercel.app/)
 
+[Live Demo](https://quick-code-test-prep.vercel.app/dashboard)
+
+![SQL warmup test -- Quick Code Test Prep](SQL-warmup.png)
+
 ## 🧠 Why This Project Exists
 
 This project started as an attempt to build a fast, focused interview-prep tool that helps candidates prepare for SQL and Python code tests in under 2 hours.
