@@ -29,7 +29,7 @@ However, the project became a valuable way to:
 - **Backend**: Supabase (Postgres + Auth)
 - **Deployment**: Vercel
 - **Styling**: Tailwind
-- **AI Assistance**: ChatGPT + Gemini (implementation + iteration)
+- **AI Assistance**: ChatGPT + Gemini + Claude Code (implementation + iteration)
 
 ## 🏗️ Architecture Overview
 
