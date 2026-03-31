@@ -48,7 +48,7 @@ However, the project became a valuable way to:
 
 - Structured learning flow (not random question dumping)
 - Warmups vs. timed modes (reduces anxiety vs. simulates pressure)
-- Simple evaluation logic for SQL answers
+- Simple evaluation logic for SQL answers, covered by unit tests
 - Session tracking for timed tests
 
 ## 🤖 AI-Assisted Development
@@ -63,6 +63,16 @@ AI was *not* used blindly:
 - Architecture decisions were human-driven
 - Edge cases required manual reasoning
 - UI/UX required iterative judgment
+
+## 🧪 Testing
+
+The SQL answer evaluation logic in `src/lib/sql-checker.ts` is covered by 26 Vitest unit tests. These tests verify that the checker correctly handles a range of SQL patterns — including normalization, keyword matching, structural comparisons, and edge cases.
+
+To run the tests:
+
+```bash
+npm run test
+```
 
 ## 📉 Why I Didn’t Pursue This Further
 
