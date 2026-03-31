@@ -1,0 +1,5657 @@
+=== src/actions/clear-attempts.ts ===
+"use server";
+
+import { createClient } from "@/lib/supabase/server";
+
+type Input = {
+  trackSlug: string;
+  questionSlug: string;
+};
+
+export async function clearAttempts(input: Input) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { ok: false, error: "Not authenticated." };
+  }
+
+  const { data: track, error: trackError } = await supabase
+    .from("tracks")
+    .select("id")
+    .eq("slug", input.trackSlug)
+    .single();
+
+  if (trackError || !track) {
+    return { ok: false, error: "Track not found." };
+  }
+
+  const { error } = await supabase
+    .from("attempts")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("track_id", track.id)
+    .eq("mode", "warmup")
+    .eq("question_slug", input.questionSlug);
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  return { ok: true };
+}
+=== src/actions/clear-timed-history.ts ===
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
+
+export async function clearTimedHistory(trackSlug: string) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      ok: false,
+      error: "You must be logged in to clear timed history.",
+    };
+  }
+
+  const { data: track, error: trackError } = await supabase
+    .from("tracks")
+    .select("id")
+    .eq("slug", trackSlug)
+    .single();
+
+  if (trackError || !track) {
+    return {
+      ok: false,
+      error: "Could not find the selected track.",
+    };
+  }
+
+  const { error: deleteAttemptsError } = await supabase
+    .from("attempts")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("track_id", track.id)
+    .eq("mode", "timed");
+
+  if (deleteAttemptsError) {
+    return {
+      ok: false,
+      error: deleteAttemptsError.message,
+    };
+  }
+
+  const { error: deleteSessionsError } = await supabase
+    .from("timed_sessions")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("track_id", track.id);
+
+  if (deleteSessionsError) {
+    return {
+      ok: false,
+      error: deleteSessionsError.message,
+    };
+  }
+
+  revalidatePath(`/dashboard/${trackSlug}/timed`);
+  revalidatePath(`/dashboard/${trackSlug}/timed/history`);
+
+  return {
+    ok: true,
+    error: null,
+  };
+}
+=== src/actions/finalize-timed-test.ts ===
+"use server";
+
+import { createClient } from "@/lib/supabase/server";
+
+export async function finalizeTimedTest(
+  sessionId: string,
+  overallScore: number
+) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { ok: false, error: "You must be logged in." };
+  }
+
+  const { error } = await supabase
+    .from("timed_sessions")
+    .update({
+      status: "completed",
+      completed_at: new Date().toISOString(),
+      overall_score: overallScore,
+    })
+    .eq("user_id", user.id)
+    .eq("session_id", sessionId);
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  return { ok: true };
+}
+=== src/actions/save-attempt.ts ===
+"use server";
+
+import { createClient } from "@/lib/supabase/server";
+
+type SaveAttemptInput = {
+  trackSlug: string;
+  lessonId?: string;
+  promptTitle: string;
+  promptText: string;
+  userAnswer: string;
+  mode: string;
+  questionSlug: string;
+  result?: unknown;
+};
+
+export async function saveAttempt(input: SaveAttemptInput) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      ok: false,
+      error: "You must be logged in to save an attempt.",
+    };
+  }
+
+  const trimmedAnswer = input.userAnswer.trim();
+
+  if (!trimmedAnswer) {
+    return {
+      ok: false,
+      error: "Please enter an answer before submitting.",
+    };
+  }
+
+  const { data: track, error: trackError } = await supabase
+    .from("tracks")
+    .select("id")
+    .eq("slug", input.trackSlug)
+    .single();
+
+  if (trackError || !track) {
+    return {
+      ok: false,
+      error: "Could not find the selected track.",
+    };
+  }
+
+  const { error } = await supabase.from("attempts").insert({
+    user_id: user.id,
+    track_id: track.id,
+    mode: input.mode,
+    question_slug: input.questionSlug,
+    prompt_title: input.promptTitle,
+    prompt_text: input.promptText,
+    user_answer: trimmedAnswer,
+    result: input.result ?? null,
+  });
+
+  if (error) {
+    return {
+      ok: false,
+      error: error.message,
+    };
+  }
+
+  return {
+    ok: true,
+    error: null,
+  };
+}
+=== src/actions/save-timed-test.ts ===
+"use server";
+
+import { createClient } from "@/lib/supabase/server";
+
+type TimedAttemptInput = {
+  trackSlug: string;
+  sessionId: string;
+  questions: Array<{
+    slug: string;
+    title: string;
+    promptText: string;
+    userAnswer: string;
+    result: {
+      isCorrect?: boolean;
+      score?: number;
+      missing?: string[];
+      forbiddenMatched?: string[];
+      unexpectedColumns?: string[];
+    };
+  }>;
+};
+
+export async function saveTimedTest(input: TimedAttemptInput) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      ok: false,
+      error: "You must be logged in to save a timed test.",
+    };
+  }
+
+  const { data: track, error: trackError } = await supabase
+    .from("tracks")
+    .select("id")
+    .eq("slug", input.trackSlug)
+    .single();
+
+  if (trackError || !track) {
+    return {
+      ok: false,
+      error: "Could not find the selected track.",
+    };
+  }
+
+  const { data: session, error: sessionError } = await supabase
+    .from("timed_sessions")
+    .select("id, session_id")
+    .eq("user_id", user.id)
+    .eq("track_id", track.id)
+    .eq("session_id", input.sessionId)
+    .single();
+
+  if (sessionError || !session) {
+    return {
+      ok: false,
+      error: "Timed session not found.",
+    };
+  }
+
+  const rows = input.questions.map((question) => ({
+    user_id: user.id,
+    track_id: track.id,
+    mode: "timed",
+    session_id: input.sessionId,
+    question_slug: question.slug,
+    prompt_title: question.title,
+    prompt_text: question.promptText,
+    user_answer: question.userAnswer.trim(),
+    result: question.result,
+  }));
+
+  const overallScore =
+    rows.length > 0
+      ? Math.round(
+          rows.reduce((sum, row) => {
+            const score =
+              row.result && typeof row.result.score === "number"
+                ? row.result.score
+                : 0;
+            return sum + score;
+          }, 0) / rows.length
+        )
+      : 0;
+
+  const { error: deleteError } = await supabase
+    .from("attempts")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("track_id", track.id)
+    .eq("mode", "timed")
+    .eq("session_id", input.sessionId);
+
+  if (deleteError) {
+    return {
+      ok: false,
+      error: deleteError.message,
+    };
+  }
+
+  const { error: insertError } = await supabase.from("attempts").insert(rows);
+
+  if (insertError) {
+    return {
+      ok: false,
+      error: insertError.message,
+    };
+  }
+
+  const { error: updateSessionError } = await supabase
+    .from("timed_sessions")
+    .update({
+      status: "completed",
+      overall_score: overallScore,
+    })
+    .eq("user_id", user.id)
+    .eq("track_id", track.id)
+    .eq("session_id", input.sessionId);
+
+  if (updateSessionError) {
+    return {
+      ok: false,
+      error: updateSessionError.message,
+    };
+  }
+
+  return {
+    ok: true,
+    error: null,
+  };
+}
+=== src/actions/start-timed-test.ts ===
+"use server";
+
+import { createClient } from "@/lib/supabase/server";
+import { getTimedQuestionsForTrack } from "@/data/question-bank";
+
+function shuffleArray<T>(items: T[]): T[] {
+  const copy = [...items];
+
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+
+  return copy;
+}
+
+function createSessionId() {
+  return `timed_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function isSessionStillActive(session: {
+  started_at: string | null;
+  duration_seconds: number | null;
+}) {
+  if (!session.started_at || !session.duration_seconds) {
+    return false;
+  }
+
+  const startedAtMs = new Date(session.started_at).getTime();
+
+  if (Number.isNaN(startedAtMs)) {
+    return false;
+  }
+
+  const expiresAtMs = startedAtMs + session.duration_seconds * 1000;
+  return Date.now() < expiresAtMs;
+}
+
+export async function startTimedTest(trackSlug: string) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { ok: false, error: "You must be logged in." };
+  }
+
+  const { data: track, error: trackError } = await supabase
+    .from("tracks")
+    .select("id")
+    .eq("slug", trackSlug)
+    .single();
+
+  if (trackError || !track) {
+    return { ok: false, error: "Track not found." };
+  }
+
+  const { data: existing, error: existingError } = await supabase
+    .from("timed_sessions")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("track_id", track.id)
+    .eq("status", "in_progress")
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (existingError) {
+    return { ok: false, error: existingError.message };
+  }
+
+  if (existing) {
+    if (isSessionStillActive(existing)) {
+      return {
+        ok: true,
+        sessionId: existing.session_id,
+        alreadyExisted: true,
+      };
+    }
+
+    const { error: expireError } = await supabase
+      .from("timed_sessions")
+      .update({ status: "completed" })
+      .eq("user_id", user.id)
+      .eq("track_id", track.id)
+      .eq("session_id", existing.session_id);
+
+    if (expireError) {
+      return { ok: false, error: expireError.message };
+    }
+  }
+
+  const questions = shuffleArray(getTimedQuestionsForTrack(trackSlug)).slice(0, 5);
+
+  const sessionId = createSessionId();
+
+  const { error } = await supabase.from("timed_sessions").insert({
+    user_id: user.id,
+    track_id: track.id,
+    session_id: sessionId,
+    duration_seconds: 30 * 60,
+    question_slugs: questions.map((q) => q.slug),
+    status: "in_progress",
+    overall_score: null,
+  });
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  return {
+    ok: true,
+    sessionId,
+    alreadyExisted: false,
+  };
+}
+=== src/app/contact/page.tsx ===
+export default function ContactPage() {
+  return (
+    <main className="max-w-xl mx-auto px-6 py-16 space-y-6">
+      <h1 className="text-3xl font-bold">Contact</h1>
+
+      <p className="text-gray-600">
+        Questions or feedback? Send a note below.
+      </p>
+
+      <form
+        action="https://formspree.io/f/xnjoaeew"
+        method="POST"
+        className="space-y-4"
+      >
+        <div>
+          <label htmlFor="email" className="block text-sm font-medium mb-1">
+            Your email
+          </label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            required
+            className="w-full rounded-lg border border-gray-300 px-3 py-2"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="message" className="block text-sm font-medium mb-1">
+            Message
+          </label>
+          <textarea
+            id="message"
+            name="message"
+            required
+            rows={6}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2"
+          />
+        </div>
+
+        <button
+          type="submit"
+          className="px-5 py-3 rounded-lg bg-black text-white hover:bg-gray-800 transition"
+        >
+          Send message
+        </button>
+      </form>
+    </main>
+  );
+}
+=== src/app/dashboard/[track]/crash-course/[lessonSlug]/page.tsx ===
+import fs from "node:fs/promises";
+import path from "node:path";
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
+import ReactMarkdown from "react-markdown";
+
+import { createClient } from "@/lib/supabase/server";
+import {
+  getLessonByTrackAndSlug,
+  getLessonCount,
+  getNextLesson,
+  getPreviousLesson,
+} from "@/db/lessons";
+
+type PageProps = {
+  params: Promise<{
+    track: string;
+    lessonSlug: string;
+  }>;
+};
+
+const SQL_LESSON_TO_WARMUP_SLUG: Record<string, string> = {
+  "select-basics": "basic-select",
+  "where-filtering": "where-filter",
+  distinct: "distinct-departments",
+  "order-by": "order-by-scores",
+  limit: "top-five-users",
+  "null-handling": "null-emails",
+  between: "between-salaries",
+  "in-operator": "in-departments",
+  "aggregate-functions": "count-users",
+  "group-by": "group-by-department",
+  having: "having-departments",
+  "inner-join": "inner-join-orders",
+  "left-join": "left-join-orders",
+  "case-when": "case-age-group",
+};
+
+const PYTHON_LESSON_TO_WARMUP_SLUG: Record<string, string> = {
+  "variables-and-types": "add-two-numbers",
+  operators: "is-even",
+  indentation: "is-even",
+  conditionals: "is-even",
+  functions: "add-two-numbers",
+  "lists-and-loops": "filter-evens",
+  "common-patterns": "count-items",
+  strings: "count-vowels",
+  dictionaries: "count-items",
+  sets: "contains-value",
+  "list-comprehensions": "filter-evens",
+  "common-built-ins": "sum-list",
+};
+
+async function getLessonMarkdown(track: string, lessonSlug: string) {
+  const filePath = path.join(
+    process.cwd(),
+    "src",
+    "content",
+    "lessons",
+    track,
+    `${lessonSlug}.md`
+  );
+
+  try {
+    return await fs.readFile(filePath, "utf8");
+  } catch {
+    return null;
+  }
+}
+
+function getWarmupHref(track: string, lessonSlug: string) {
+  if (track === "sql") {
+    const warmupSlug = SQL_LESSON_TO_WARMUP_SLUG[lessonSlug];
+
+    if (warmupSlug) {
+      return `/dashboard/${track}/warmup/${warmupSlug}`;
+    }
+  }
+
+  if (track === "python") {
+    const warmupSlug = PYTHON_LESSON_TO_WARMUP_SLUG[lessonSlug];
+
+    if (warmupSlug) {
+      return `/dashboard/${track}/warmup/${warmupSlug}`;
+    }
+  }
+
+  return `/dashboard/${track}/warmup`;
+}
+
+export default async function LessonPage({ params }: PageProps) {
+  const { track, lessonSlug } = await params;
+
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const lesson = await getLessonByTrackAndSlug(track, lessonSlug);
+
+  if (!lesson) {
+    notFound();
+  }
+
+  const markdown = await getLessonMarkdown(track, lessonSlug);
+
+  if (!markdown) {
+    notFound();
+  }
+
+  const previousLesson = await getPreviousLesson(
+    lesson.track_id,
+    lesson.lesson_order
+  );
+
+  const nextLesson = await getNextLesson(lesson.track_id, lesson.lesson_order);
+
+  const lessonCount = await getLessonCount(lesson.track_id);
+  const warmupHref = getWarmupHref(track, lessonSlug);
+
+  return (
+    <div>
+      <p>
+        <Link href={`/dashboard/${track}`} className="underline">
+          Back to {track.toUpperCase()}
+        </Link>
+      </p>
+
+      <p className="mt-4 text-sm text-gray-500">
+        Lesson {lesson.lesson_order} of {lessonCount}
+      </p>
+
+      <section className="mt-8">
+        <div className="prose max-w-none prose-code:before:content-none prose-code:after:content-none prose-code:font-normal prose-pre:bg-gray-900 prose-pre:text-white prose-pre:rounded prose-pre:px-4 prose-pre:py-3 prose-pre:overflow-x-auto">
+          <ReactMarkdown
+            components={{
+              code({ className, children, ...props }) {
+                const isBlock = className?.includes("language-");
+
+                if (isBlock) {
+                  return (
+                    <code className={className} {...props}>
+                      {children}
+                    </code>
+                  );
+                }
+
+                return (
+                  <code className="rounded bg-gray-100 px-1 py-0.5 font-mono text-sm font-normal">
+                    {children}
+                  </code>
+                );
+              },
+            }}
+          >
+            {markdown}
+          </ReactMarkdown>
+        </div>
+      </section>
+
+      <section className="mt-10 flex justify-between">
+        <div>
+          {previousLesson ? (
+            <Link
+              href={`/dashboard/${track}/crash-course/${previousLesson.slug}`}
+              className="underline"
+            >
+              ← Previous Lesson: {previousLesson.title}
+            </Link>
+          ) : (
+            <span className="text-sm text-gray-400">Beginning of Course</span>
+          )}
+        </div>
+
+        <div className="text-right">
+          {nextLesson ? (
+            <Link
+              href={`/dashboard/${track}/crash-course/${nextLesson.slug}`}
+              className="underline"
+            >
+              Next Lesson: {nextLesson.title} →
+            </Link>
+          ) : (
+            <span className="font-semibold">Course Complete</span>
+          )}
+        </div>
+      </section>
+
+      <section className="mt-6">
+        <Link href={warmupHref} className="underline">
+          Try Warmup Practice
+        </Link>
+      </section>
+    </div>
+  );
+}
+=== src/app/dashboard/[track]/layout.tsx ===
+import type { ReactNode } from "react";
+import TrackSidebar from "@/components/layout/track-sidebar";
+
+type Props = {
+  children: ReactNode;
+  params: Promise<{
+    track: string;
+  }>;
+};
+
+export default async function TrackLayout({ children, params }: Props) {
+  const { track } = await params;
+
+  return (
+    <div className="flex min-h-screen">
+      <TrackSidebar track={track} />
+      <main className="flex-1 p-8 text-base leading-relaxed">{children}</main>
+    </div>
+  );
+}
+=== src/app/dashboard/[track]/page.tsx ===
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { getTrackBySlug } from "@/db/tracks";
+import { getLessonsByTrackSlug } from "@/db/lessons";
+import { getWarmupProgress } from "@/db/warmup-progress";
+import { getBestTimedScore } from "@/db/timed-progress";
+import { getWarmupQuestionsForTrack } from "@/data/question-bank";
+
+type PageProps = {
+  params: Promise<{
+    track: string;
+  }>;
+};
+
+function getTrackLabel(track: string) {
+  return track === "python" ? "Python" : "SQL";
+}
+
+function getTrackValueProp(track: string) {
+  if (track === "python") {
+    return "Build confidence with core Python concepts, warmup tests based on common interview questions, and timed test simulation.";
+  }
+
+  return "Build confidence with core SQL concepts, warmup tests based on common interview questions, and timed test simulation.";
+}
+
+function getTrackOutcomeMessage(track: string) {
+  if (track === "python") {
+    return "Prepare for your Python coding screen in under 2 hours. Review key concepts in the crash course, build confidence with warmup tests based on common interview questions, and simulate a real assessment with a timed test so you don’t freeze when it matters.";
+  }
+
+  return "Prepare for your SQL coding screen in under 2 hours. Review key concepts in the crash course, build confidence with warmup tests based on common interview questions, and simulate a real assessment with a timed test so you don’t freeze when it matters.";
+}
+
+function getWarmupChipClasses(completed: number, total: number) {
+  if (total > 0 && completed === total) {
+    return "rounded bg-green-50 px-3 py-1.5 text-sm font-medium text-green-700";
+  }
+
+  if (completed > 0) {
+    return "rounded bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700";
+  }
+
+  return "rounded bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-600";
+}
+
+function getTimedChipClasses(bestTimedScore: number | null) {
+  if (bestTimedScore === null) {
+    return "rounded bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-600";
+  }
+
+  if (bestTimedScore >= 80) {
+    return "rounded bg-green-50 px-3 py-1.5 text-sm font-medium text-green-700";
+  }
+
+  if (bestTimedScore >= 60) {
+    return "rounded bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700";
+  }
+
+  return "rounded bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-700";
+}
+
+export default async function TrackPage({ params }: PageProps) {
+  const { track } = await params;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const trackData = await getTrackBySlug(track);
+
+  if (!trackData) {
+    notFound();
+  }
+
+  const lessons = await getLessonsByTrackSlug(track);
+  const firstLesson = lessons[0] ?? null;
+
+  const warmupQuestions = getWarmupQuestionsForTrack(track);
+  const warmupProgress = await getWarmupProgress(user.id, trackData.id);
+  const bestTimedScore = await getBestTimedScore(user.id, trackData.id);
+
+  const completedWarmups = warmupQuestions.filter(
+    (question) => warmupProgress[question.slug]?.isComplete
+  ).length;
+
+  return (
+    <div className="max-w-5xl">
+      <p>
+        <Link href="/dashboard" className="underline">
+          Back to Dashboard
+        </Link>
+      </p>
+
+      <section className="mt-6 rounded border bg-gray-50 p-6">
+        <p className="text-sm font-medium uppercase tracking-wide text-gray-500">
+          {getTrackLabel(track)} Track
+        </p>
+
+        <h1 className="mt-2 text-3xl font-bold">{trackData.title}</h1>
+
+        <p className="mt-3 max-w-3xl text-base text-gray-700">
+          {trackData.description ?? getTrackValueProp(track)}
+        </p>
+
+        <p className="mt-4 max-w-3xl text-base text-gray-600">
+          {getTrackOutcomeMessage(track)}
+        </p>
+
+        <div className="mt-4 flex flex-wrap gap-3">
+          <span
+            className={getWarmupChipClasses(
+              completedWarmups,
+              warmupQuestions.length
+            )}
+          >
+            Warmups: {completedWarmups} / {warmupQuestions.length} complete
+          </span>
+
+          <span className={getTimedChipClasses(bestTimedScore)}>
+            Best timed score:{" "}
+            {bestTimedScore !== null ? `${bestTimedScore}%` : "No score yet"}
+          </span>
+        </div>
+
+        <div className="mt-6 flex flex-wrap gap-3">
+          {firstLesson && (
+            <Link
+              href={`/dashboard/${track}/crash-course/${firstLesson.slug}`}
+              className="inline-flex items-center justify-center rounded border bg-white px-5 py-2.5 text-base font-medium transition hover:bg-gray-100"
+            >
+              Open Crash Course
+            </Link>
+          )}
+
+          <Link
+            href={`/dashboard/${track}/warmup`}
+            className="inline-flex items-center justify-center rounded border bg-white px-5 py-2.5 text-base font-medium transition hover:bg-gray-100"
+          >
+            Open Warmup Tests
+          </Link>
+
+          <Link
+            href={`/dashboard/${track}/timed`}
+            className="inline-flex items-center justify-center rounded border bg-white px-5 py-2.5 text-base font-medium transition hover:bg-gray-100"
+          >
+            Open Timed Test
+          </Link>
+        </div>
+      </section>
+
+      <section className="mt-8 grid gap-6 md:grid-cols-2">
+        <div className="rounded border bg-gray-50 p-6">
+          <h2 className="text-xl font-semibold">Crash Course</h2>
+          <p className="mt-2 text-base text-gray-600">
+            Review the core concepts for this track before jumping into practice.
+          </p>
+
+          <ul className="mt-4 space-y-3">
+            {lessons.map((lesson) => (
+              <li key={lesson.id}>
+                <Link
+                  href={`/dashboard/${track}/crash-course/${lesson.slug}`}
+                  className="block rounded border bg-white p-4 transition hover:bg-gray-100"
+                >
+                  <h3 className="text-base font-semibold">
+                    {lesson.lesson_order}. {lesson.title}
+                  </h3>
+                  <p className="mt-1 text-base text-gray-600">
+                    {lesson.summary ?? "No summary yet."}
+                  </p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="space-y-6">
+          <div className="rounded border bg-gray-50 p-6">
+            <h2 className="text-xl font-semibold">Warmup Tests</h2>
+            <p className="mt-2 text-base text-gray-600">
+              Untimed practice questions with instant feedback. Best for
+              building confidence and learning the patterns.
+            </p>
+
+            <div className="mt-4">
+              <Link
+                href={`/dashboard/${track}/warmup`}
+                className="inline-flex items-center justify-center rounded border bg-white px-5 py-2.5 text-base font-medium transition hover:bg-gray-100"
+              >
+                Open Warmup Tests
+              </Link>
+            </div>
+          </div>
+
+          <div className="rounded border bg-gray-50 p-6">
+            <h2 className="text-xl font-semibold">Timed Test</h2>
+            <p className="mt-2 text-base text-gray-600">
+              Practice under time pressure with a short mixed set of questions
+              designed to simulate a coding assessment.
+            </p>
+
+            <div className="mt-4">
+              <Link
+                href={`/dashboard/${track}/timed`}
+                className="inline-flex items-center justify-center rounded border bg-white px-5 py-2.5 text-base font-medium transition hover:bg-gray-100"
+              >
+                Open Timed Test
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+=== src/app/dashboard/[track]/timed/[sessionId]/page.tsx ===
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { getTrackBySlug } from "@/db/tracks";
+import TimedTest from "@/components/timed/timed-test";
+import { getTimedQuestionsForTrack } from "@/data/question-bank";
+
+type PageProps = {
+  params: Promise<{ track: string; sessionId: string }>;
+};
+
+export default async function TimedSessionPage({ params }: PageProps) {
+  const { track, sessionId } = await params;
+
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const trackData = await getTrackBySlug(track);
+
+  if (!trackData) {
+    notFound();
+  }
+
+  const { data: session, error } = await supabase
+    .from("timed_sessions")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("track_id", trackData.id)
+    .eq("session_id", sessionId)
+    .single();
+
+  if (error || !session) {
+    notFound();
+  }
+
+  const questionSlugs = Array.isArray(session.question_slugs)
+    ? session.question_slugs
+    : [];
+
+  const questionMap = new Map(
+    getTimedQuestionsForTrack(track).map((q) => [q.slug, q])
+  );
+
+  const questions = questionSlugs
+    .map((slug: unknown) => questionMap.get(String(slug)))
+    .filter(
+      (
+        q: ReturnType<typeof getTimedQuestionsForTrack>[number] | undefined
+      ): q is ReturnType<typeof getTimedQuestionsForTrack>[number] => q !== undefined
+    );
+
+  return (
+    <div>
+      <p>
+        <Link href={`/dashboard/${track}/timed`} className="underline">
+          Back to Timed Test
+        </Link>
+      </p>
+
+      <h1 className="mt-4 text-2xl font-bold">
+        {trackData.title} — Timed Test
+      </h1>
+
+      <TimedTest
+        track={track}
+        sessionId={sessionId}
+        questions={questions}
+        durationSeconds={session.duration_seconds}
+        startedAt={session.started_at}
+      />
+    </div>
+  );
+}
+=== src/app/dashboard/[track]/timed/history/[sessionId]/page.tsx ===
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { getTrackBySlug } from "@/db/tracks";
+
+type PageProps = {
+  params: Promise<{
+    track: string;
+    sessionId: string;
+  }>;
+};
+
+export default async function TimedSessionPage({ params }: PageProps) {
+  const { track, sessionId } = await params;
+
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const trackData = await getTrackBySlug(track);
+
+  if (!trackData) {
+    notFound();
+  }
+
+  const { data: attempts, error } = await supabase
+    .from("attempts")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("track_id", trackData.id)
+    .eq("mode", "timed")
+    .eq("session_id", sessionId)
+    .order("created_at");
+
+  if (error || !attempts || attempts.length === 0) {
+    notFound();
+  }
+
+  const scores = attempts.map((a) => a.result?.score ?? 0);
+
+  const overallScore =
+    scores.length > 0
+      ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+      : 0;
+
+  return (
+    <div>
+      <p>
+        <Link
+          href={`/dashboard/${track}/timed/history`}
+          className="underline"
+        >
+          Back to Timed Test History
+        </Link>
+      </p>
+
+      <h1 className="mt-4 text-2xl font-bold">Timed Test Review</h1>
+
+      <p className="mt-2 text-gray-600">Overall score: {overallScore}%</p>
+
+      <div className="mt-6 space-y-6">
+        {attempts.map((attempt, index) => (
+          <div key={attempt.id} className="rounded border p-4">
+            <div className="flex items-center justify-between">
+              <p className="font-semibold">
+                {index + 1}. {attempt.prompt_title}
+              </p>
+
+              <p
+                className={
+                  attempt.result?.isCorrect
+                    ? "font-semibold text-green-700"
+                    : "font-semibold text-amber-700"
+                }
+              >
+                {attempt.result?.isCorrect ? "Correct" : "Needs work"} —{" "}
+                {attempt.result?.score ?? 0}%
+              </p>
+            </div>
+
+            <p className="mt-3 text-sm text-gray-600">{attempt.prompt_text}</p>
+
+            <pre className="mt-3 whitespace-pre-wrap rounded bg-gray-50 p-3 font-mono text-sm">
+              {attempt.user_answer || "(No answer submitted)"}
+            </pre>
+
+            {attempt.result?.missing?.length > 0 && (
+              <div className="mt-3">
+                <p className="text-sm font-medium text-gray-700">
+                  Missing elements
+                </p>
+
+                <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
+                  {attempt.result.missing.map(
+                    (item: string, itemIndex: number) => (
+                      <li key={`${item}-${itemIndex}`}>{item}</li>
+                    )
+                  )}
+                </ul>
+              </div>
+            )}
+
+            {attempt.result?.forbiddenMatched?.length > 0 && (
+              <div className="mt-3">
+                <p className="text-sm font-medium text-gray-700">
+                  Problematic elements
+                </p>
+
+                <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
+                  {attempt.result.forbiddenMatched.map(
+                    (item: string, itemIndex: number) => (
+                      <li key={`${item}-${itemIndex}`}>{item}</li>
+                    )
+                  )}
+                </ul>
+              </div>
+            )}
+
+            {(attempt.result?.unexpectedColumns?.length ?? 0) > 0 && (
+              <div className="mt-3">
+                <p className="text-sm font-medium text-gray-700">
+                  Unexpected columns
+                </p>
+
+                <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
+                  {attempt.result.unexpectedColumns.map(
+                    (item: string, itemIndex: number) => (
+                      <li key={`${item}-${itemIndex}`}>{item}</li>
+                    )
+                  )}
+                </ul>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+=== src/app/dashboard/[track]/timed/history/page.tsx ===
+import Link from "next/link";
+import { redirect, notFound } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { getTrackBySlug } from "@/db/tracks";
+import { getTimedSessions } from "@/db/timed-sessions";
+import ClearTimedHistoryButton from "@/components/timed/clear-timed-history-button";
+
+type PageProps = {
+  params: Promise<{ track: string }>;
+};
+
+export default async function TimedHistoryPage({ params }: PageProps) {
+  const { track } = await params;
+
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const trackData = await getTrackBySlug(track);
+
+  if (!trackData) {
+    notFound();
+  }
+
+  const sessions = await getTimedSessions(user.id, trackData.id);
+
+  return (
+    <div>
+      <p>
+        <Link href={`/dashboard/${track}/timed`} className="underline">
+          Back to Timed Test
+        </Link>
+      </p>
+
+      <h1 className="mt-4 text-2xl font-bold">Timed Test History</h1>
+
+      {sessions.length > 0 && (
+        <div className="mt-4">
+          <ClearTimedHistoryButton track={track} />
+        </div>
+      )}
+
+      {sessions.length === 0 && (
+        <p className="mt-4 text-gray-600">
+          You have not completed any timed tests yet.
+        </p>
+      )}
+
+      <div className="mt-6 space-y-6">
+        {sessions.map((session) => (
+          <div key={session.sessionId} className="rounded border p-4">
+            <div className="flex items-center justify-between">
+              <Link
+                href={`/dashboard/${track}/timed/history/${session.sessionId}`}
+                className="font-semibold underline"
+              >
+                Session — {new Date(session.createdAt).toLocaleString()}
+              </Link>
+
+              <p className="text-sm text-gray-700">
+                Overall score: {session.overallScore}%
+              </p>
+            </div>
+
+            <div className="mt-4 space-y-2">
+              {session.attempts.map((attempt, index) => (
+                <div
+                  key={attempt.id}
+                  className="flex items-center justify-between text-sm"
+                >
+                  <span>
+                    {index + 1}. {attempt.prompt_title}
+                  </span>
+
+                  <span
+                    className={
+                      attempt.result?.isCorrect
+                        ? "text-green-700"
+                        : "text-amber-700"
+                    }
+                  >
+                    {attempt.result?.isCorrect ? "✓" : "⚠"}{" "}
+                    {attempt.result?.score ?? 0}%
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+=== src/app/dashboard/[track]/timed/page.tsx ===
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { getTrackBySlug } from "@/db/tracks";
+import StartTimedTestButton from "@/components/timed/start-timed-test-button";
+
+type PageProps = {
+  params: Promise<{ track: string }>;
+};
+
+function isSessionStillActive(session: {
+  started_at: string | null;
+  duration_seconds: number | null;
+}) {
+  if (!session.started_at || !session.duration_seconds) {
+    return false;
+  }
+
+  const startedAtMs = new Date(session.started_at).getTime();
+
+  if (Number.isNaN(startedAtMs)) {
+    return false;
+  }
+
+  const expiresAtMs = startedAtMs + session.duration_seconds * 1000;
+  return Date.now() < expiresAtMs;
+}
+
+function getTrackLabel(track: string) {
+  return track === "python" ? "Python" : "SQL";
+}
+
+export default async function TimedPage({ params }: PageProps) {
+  const { track } = await params;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const trackData = await getTrackBySlug(track);
+
+  if (!trackData) {
+    notFound();
+  }
+
+  const { data: activeSession } = await supabase
+    .from("timed_sessions")
+    .select("session_id, started_at, duration_seconds")
+    .eq("user_id", user.id)
+    .eq("track_id", trackData.id)
+    .eq("status", "in_progress")
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  let activeSessionId: string | null = null;
+
+  if (activeSession && typeof activeSession.session_id === "string") {
+    if (isSessionStillActive(activeSession)) {
+      activeSessionId = activeSession.session_id;
+    } else {
+      await supabase
+        .from("timed_sessions")
+        .update({ status: "completed" })
+        .eq("user_id", user.id)
+        .eq("track_id", trackData.id)
+        .eq("session_id", activeSession.session_id);
+    }
+  }
+
+  return (
+    <div className="max-w-3xl">
+      <p>
+        <Link href={`/dashboard/${track}`} className="underline">
+          Back to {track.toUpperCase()}
+        </Link>
+      </p>
+
+      <h1 className="mt-4 text-2xl font-bold">
+        {trackData.title} — Timed Test
+      </h1>
+
+      <p className="mt-2 text-gray-600">
+        Simulate a short {getTrackLabel(track)} coding assessment with a timed,
+        auto-graded practice set.
+      </p>
+
+      <section className="mt-8 rounded border bg-gray-50 p-6">
+        <h2 className="text-xl font-semibold">Ready to begin?</h2>
+
+        <ul className="mt-4 space-y-2 text-sm text-gray-700">
+          <li>• 5 random {getTrackLabel(track)} questions</li>
+          <li>• 30 minute timer</li>
+          <li>• Automatic grading when you submit</li>
+          <li>• Results saved to your timed test history</li>
+        </ul>
+
+        <p className="mt-4 text-sm text-gray-600">
+          This is best after you’ve done a few warmup questions and want to
+          practice under light time pressure.
+        </p>
+
+        <div className="mt-6 flex flex-wrap gap-3">
+          <StartTimedTestButton
+            track={track}
+            activeSessionId={activeSessionId}
+          />
+
+          <Link
+            href={`/dashboard/${track}/timed/history`}
+            className="inline-flex items-center justify-center rounded border bg-white px-5 py-2.5 text-base font-medium transition hover:bg-gray-100"
+          >
+            View Timed Test History
+          </Link>
+        </div>
+      </section>
+    </div>
+  );
+}
+=== src/app/dashboard/[track]/timed/start/[sessionId]/page.tsx ===
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { getTrackBySlug } from "@/db/tracks";
+import TimedTest from "@/components/timed/timed-test";
+import { getWarmupQuestionsForTrack } from "@/data/question-bank";
+
+type PageProps = {
+  params: Promise<{ track: string; sessionId: string }>;
+};
+
+function isSessionStillActive(session: {
+  started_at: string | null;
+  duration_seconds: number | null;
+}) {
+  if (!session.started_at || !session.duration_seconds) {
+    return false;
+  }
+
+  const startedAtMs = new Date(session.started_at).getTime();
+
+  if (Number.isNaN(startedAtMs)) {
+    return false;
+  }
+
+  const expiresAtMs = startedAtMs + session.duration_seconds * 1000;
+  return Date.now() < expiresAtMs;
+}
+
+export default async function TimedStartPage({ params }: PageProps) {
+  const { track, sessionId } = await params;
+
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const trackData = await getTrackBySlug(track);
+
+  if (!trackData) {
+    notFound();
+  }
+
+  const { data: session, error } = await supabase
+    .from("timed_sessions")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("track_id", trackData.id)
+    .eq("session_id", sessionId)
+    .single();
+
+  if (error || !session) {
+    notFound();
+  }
+
+  if (session.status !== "in_progress") {
+    redirect(`/dashboard/${track}/timed/history/${sessionId}`);
+  }
+
+  if (!isSessionStillActive(session)) {
+    await supabase
+      .from("timed_sessions")
+      .update({ status: "completed" })
+      .eq("user_id", user.id)
+      .eq("track_id", trackData.id)
+      .eq("session_id", sessionId);
+
+    redirect(`/dashboard/${track}/timed/history/${sessionId}`);
+  }
+
+  const questionSlugs = Array.isArray(session.question_slugs)
+    ? session.question_slugs
+    : [];
+
+  const allQuestions = getWarmupQuestionsForTrack(track);
+  const questionMap = new Map(allQuestions.map((q) => [q.slug, q]));
+
+  const questions = questionSlugs
+    .map((slug: unknown) => questionMap.get(String(slug)))
+    .filter(
+      (q: (typeof allQuestions)[number] | undefined): q is (typeof allQuestions)[number] =>
+        q !== undefined
+    );
+
+  return (
+    <div>
+      <p>
+        <Link href={`/dashboard/${track}/timed`} className="underline">
+          Back to Timed Test
+        </Link>
+      </p>
+
+      <h1 className="mt-4 text-2xl font-bold">
+        {trackData.title} — Timed Test
+      </h1>
+
+      <TimedTest
+        track={track}
+        sessionId={sessionId}
+        questions={questions}
+        durationSeconds={session.duration_seconds}
+        startedAt={session.started_at}
+      />
+    </div>
+  );
+}
+=== src/app/dashboard/[track]/timed/start/page.tsx ===
+import { redirect } from "next/navigation";
+
+type PageProps = {
+  params: Promise<{ track: string }>;
+};
+
+export default async function TimedStartRedirectPage({ params }: PageProps) {
+  const { track } = await params;
+  redirect(`/dashboard/${track}/timed`);
+}
+=== src/app/dashboard/[track]/warmup/[questionSlug]/page.tsx ===
+import { notFound, redirect } from "next/navigation";
+import Link from "next/link";
+import ReactMarkdown from "react-markdown";
+import { createClient } from "@/lib/supabase/server";
+import { getTrackBySlug } from "@/db/tracks";
+import { getRecentAttempts } from "@/db/attempts";
+import WarmupQuestion from "@/components/warmup/warmup-question";
+import AttemptHistory from "@/components/attempts/attempt-history";
+import {
+  getDifficultyClasses,
+  getDifficultyLabel,
+  getWarmupQuestionsForTrack,
+} from "@/data/question-bank";
+
+type PageProps = {
+  params: Promise<{
+    track: string;
+    questionSlug: string;
+  }>;
+};
+
+export default async function WarmupQuestionPage({ params }: PageProps) {
+  const { track, questionSlug } = await params;
+
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const trackData = await getTrackBySlug(track);
+
+  if (!trackData) {
+    notFound();
+  }
+
+  const questions = getWarmupQuestionsForTrack(track);
+  const questionIndex = questions.findIndex((q) => q.slug === questionSlug);
+
+  if (questionIndex === -1) {
+    notFound();
+  }
+
+  const question = questions[questionIndex];
+  const previousQuestion =
+    questionIndex > 0 ? questions[questionIndex - 1] : null;
+  const nextQuestion =
+    questionIndex < questions.length - 1 ? questions[questionIndex + 1] : null;
+
+  const attempts = await getRecentAttempts(user.id, trackData.id, questionSlug);
+
+  return (
+    <div>
+      <p>
+        <Link href={`/dashboard/${track}/warmup`} className="underline">
+          Back to Warmup Tests
+        </Link>
+      </p>
+
+      <p className="mt-4 text-sm text-gray-500">
+        Question {questionIndex + 1} of {questions.length}
+      </p>
+
+      <div className="mt-2 flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold">{question.title}</h1>
+
+        <span className={getDifficultyClasses(question.difficulty)}>
+          {getDifficultyLabel(question.difficulty)}
+        </span>
+      </div>
+
+      <div className="prose mt-3 max-w-none prose-p:my-0 prose-code:before:content-none prose-code:after:content-none prose-code:rounded prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:font-mono prose-code:font-normal prose-code:text-[1em]">
+        <ReactMarkdown>{question.promptText}</ReactMarkdown>
+      </div>
+
+      <WarmupQuestion
+        track={track}
+        questionSlug={questionSlug}
+        question={question}
+      />
+
+      <AttemptHistory
+        attempts={attempts}
+        trackSlug={track}
+        questionSlug={questionSlug}
+      />
+
+      <section className="mt-10 flex justify-between">
+        <div>
+          {previousQuestion ? (
+            <Link
+              href={`/dashboard/${track}/warmup/${previousQuestion.slug}`}
+              className="underline"
+            >
+              ← Previous Question: {previousQuestion.title}
+            </Link>
+          ) : (
+            <span className="text-sm text-gray-400">Beginning of warmup</span>
+          )}
+        </div>
+
+        <div className="text-right">
+          {nextQuestion ? (
+            <Link
+              href={`/dashboard/${track}/warmup/${nextQuestion.slug}`}
+              className="underline"
+            >
+              Next Question: {nextQuestion.title} →
+            </Link>
+          ) : (
+            <span className="font-semibold">Warmup Complete</span>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+=== src/app/dashboard/[track]/warmup/page.tsx ===
+import Link from "next/link";
+import ReactMarkdown from "react-markdown";
+import { notFound, redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { getTrackBySlug } from "@/db/tracks";
+import {
+  getDifficultyClasses,
+  getDifficultyLabel,
+  getWarmupQuestionsForTrack,
+} from "@/data/question-bank";
+
+type PageProps = {
+  params: Promise<{ track: string }>;
+};
+
+export default async function WarmupPage({ params }: PageProps) {
+  const { track } = await params;
+
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const trackData = await getTrackBySlug(track);
+
+  if (!trackData) {
+    notFound();
+  }
+
+  const questions = getWarmupQuestionsForTrack(track);
+
+  return (
+    <div>
+      <p>
+        <Link href={`/dashboard/${track}`} className="underline">
+          Back to {track.toUpperCase()}
+        </Link>
+      </p>
+
+      <h1 className="mt-4 text-2xl font-bold">
+        {trackData.title} — Warmup Tests
+      </h1>
+
+      <p className="mt-2 text-gray-600">
+        Untimed practice questions to help you build confidence before a real
+        coding test.
+      </p>
+
+      <section className="mt-8">
+        <h2 className="text-xl font-semibold">Available Questions</h2>
+
+        <ul className="mt-4 space-y-3">
+          {questions.map((question, index) => (
+            <li key={question.slug}>
+              <Link
+                href={`/dashboard/${track}/warmup/${question.slug}`}
+                className="block rounded border p-4 hover:bg-gray-50"
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <h3 className="text-lg font-semibold">
+                    {index + 1}. {question.title}
+                  </h3>
+
+                  <span className={getDifficultyClasses(question.difficulty)}>
+                    {getDifficultyLabel(question.difficulty)}
+                  </span>
+                </div>
+
+                <div className="prose mt-2 max-w-none prose-p:my-0 prose-code:before:content-none prose-code:after:content-none prose-code:rounded prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:font-mono prose-code:font-normal prose-code:text-[1em]">
+                  <ReactMarkdown>{question.promptText}</ReactMarkdown>
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </div>
+  );
+}
+=== src/app/dashboard/layout.tsx ===
+import type { ReactNode } from "react";
+
+type Props = {
+  children: ReactNode;
+};
+
+export default function DashboardLayout({ children }: Props) {
+  return <>{children}</>;
+}
+=== src/app/dashboard/page.tsx ===
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { getTracks } from "@/db/tracks";
+import { getWarmupProgress } from "@/db/warmup-progress";
+import { getBestTimedScore } from "@/db/timed-progress";
+import { getWarmupQuestionsForTrack } from "@/data/question-bank";
+import LogoutButton from "@/components/auth/logout-button";
+import DashboardSidebar from "@/components/layout/dashboard-sidebar";
+
+function getWarmupChipClasses(completed: number, total: number) {
+  if (total > 0 && completed === total) {
+    return "rounded bg-green-50 px-3 py-1.5 text-sm font-medium text-green-700";
+  }
+
+  if (completed > 0) {
+    return "rounded bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700";
+  }
+
+  return "rounded bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-600";
+}
+
+function getTimedChipClasses(bestTimedScore: number | null) {
+  if (bestTimedScore === null) {
+    return "rounded bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-600";
+  }
+
+  if (bestTimedScore >= 80) {
+    return "rounded bg-green-50 px-3 py-1.5 text-sm font-medium text-green-700";
+  }
+
+  if (bestTimedScore >= 60) {
+    return "rounded bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700";
+  }
+
+  return "rounded bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-700";
+}
+
+export default async function DashboardPage() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const tracks = await getTracks();
+
+  // ✅ Ensure SQL appears first
+  const orderedTracks = [...tracks].sort((a, b) => {
+    if (a.slug === "sql") return -1;
+    if (b.slug === "sql") return 1;
+    return 0;
+  });
+
+  const trackProgress = await Promise.all(
+    tracks.map(async (track) => {
+      const warmupQuestions = getWarmupQuestionsForTrack(track.slug);
+      const warmupProgress = await getWarmupProgress(user.id, track.id);
+      const bestTimedScore = await getBestTimedScore(user.id, track.id);
+
+      const completedWarmups = warmupQuestions.filter(
+        (question) => warmupProgress[question.slug]?.isComplete
+      ).length;
+
+      return {
+        trackId: track.id,
+        completedWarmups,
+        totalWarmups: warmupQuestions.length,
+        bestTimedScore,
+      };
+    })
+  );
+
+  const progressByTrackId = new Map(
+    trackProgress.map((item) => [item.trackId, item])
+  );
+
+  return (
+    <div className="flex min-h-screen">
+      <DashboardSidebar />
+
+      <main className="flex-1 p-8 text-base leading-relaxed">
+        <div className="mx-auto w-full max-w-5xl">
+          <section className="rounded border bg-gray-50 p-6">
+            <h1 className="text-3xl font-bold">Dashboard</h1>
+
+            <p className="mt-3 text-base text-gray-700">
+              Prepare for coding tests quickly with focused practice and
+              realistic test simulation.
+            </p>
+
+            <div className="mt-6 rounded border bg-white p-5">
+              <p className="text-base font-medium text-gray-900">
+                How it works
+              </p>
+
+              <ul className="mt-3 space-y-2 text-gray-700">
+                <li>• Review key concepts in a crash course</li>
+                <li>• Build confidence with warmup tests</li>
+                <li>• Simulate a real interview with a timed test</li>
+              </ul>
+
+              <p className="mt-4 text-base text-gray-600">
+                Most users can complete a full prep cycle in under 2 hours.
+              </p>
+            </div>
+
+            <p className="mt-4 text-base text-gray-600">
+              Signed in as: {user.email}
+            </p>
+          </section>
+
+          <section className="mt-8">
+            <h2 className="text-2xl font-semibold">Available Tracks</h2>
+
+            <p className="mt-2 text-base text-gray-600">
+              Choose a track to review concepts, build confidence with warmups,
+              and practice under time pressure.
+            </p>
+
+            <ul className="mt-6 space-y-4">
+              {orderedTracks.map((track) => {
+                const progress = progressByTrackId.get(track.id);
+                const completedWarmups = progress?.completedWarmups ?? 0;
+                const totalWarmups = progress?.totalWarmups ?? 0;
+                const bestTimedScore = progress?.bestTimedScore ?? null;
+
+                return (
+                  <li key={track.id}>
+                    <Link
+                      href={`/dashboard/${track.slug}`}
+                      className="block rounded border p-5 transition hover:bg-gray-50"
+                    >
+                      <h3 className="text-xl font-semibold">{track.title}</h3>
+
+                      <p className="mt-2 text-base text-gray-600">
+                        {track.description ?? "No description yet."}
+                      </p>
+
+                      <div className="mt-4 flex flex-wrap gap-3">
+                        <span
+                          className={getWarmupChipClasses(
+                            completedWarmups,
+                            totalWarmups
+                          )}
+                        >
+                          Warmups: {completedWarmups} / {totalWarmups} complete
+                        </span>
+
+                        <span className={getTimedChipClasses(bestTimedScore)}>
+                          Best timed score:{" "}
+                          {bestTimedScore !== null
+                            ? `${bestTimedScore}%`
+                            : "No score yet"}
+                        </span>
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+
+          <section className="mt-10">
+            <LogoutButton />
+          </section>
+        </div>
+      </main>
+    </div>
+  );
+}
+=== src/app/layout.tsx ===
+import "./globals.css";
+import type { ReactNode } from "react";
+
+type Props = {
+  children: ReactNode;
+};
+
+export default function RootLayout({ children }: Props) {
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
+  );
+}
+=== src/app/login/page.tsx ===
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/browser";
+
+export default function LoginPage() {
+  const supabase = createClient();
+  const router = useRouter();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    setLoading(false);
+
+    if (error) {
+      setError("Invalid credentials. Please use the demo account or request access.");
+      return;
+    }
+
+    router.push("/dashboard");
+    router.refresh();
+  }
+
+  function fillDemoCredentials() {
+    setEmail("demo@quickprep.com");
+    setPassword("demoprep");
+  }
+
+  return (
+    <main className="mx-auto max-w-md p-8">
+      <h1 className="mb-6 text-2xl font-bold">Demo access</h1>
+
+      <form onSubmit={handleLogin} className="space-y-4">
+        <input
+          className="w-full rounded border p-2"
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+
+        <input
+          className="w-full rounded border p-2"
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+
+        <button
+          className="w-full rounded bg-black px-4 py-2 text-white transition hover:bg-gray-800"
+          type="submit"
+          disabled={loading}
+        >
+          {loading ? "Continuing..." : "Continue"}
+        </button>
+      </form>
+
+      <p className="mt-4 text-center text-sm text-gray-600">
+        Use the demo account below for immediate access, or{" "}
+        <a href="/contact" className="underline hover:text-black">
+          request your own account
+        </a>
+        .
+      </p>
+
+      <div className="mt-4 rounded-lg border bg-gray-50 p-4 text-sm text-gray-700">
+        <p className="mb-2 font-medium">Demo account</p>
+        <p>Email: demo@quickprep.com</p>
+        <p>Password: demoprep</p>
+
+        <button
+          type="button"
+          onClick={fillDemoCredentials}
+          className="mt-3 text-sm underline hover:text-black"
+        >
+          Fill demo credentials
+        </button>
+      </div>
+
+      {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+    </main>
+  );
+}
+=== src/app/page.tsx ===
+export default function HomePage() {
+  return (
+    <main className="min-h-screen bg-white text-gray-900">
+      {/* Container */}
+      <div className="mx-auto max-w-5xl px-6 py-16">
+        
+        {/* HERO */}
+        <section className="text-center space-y-6">
+          <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
+            Quickly prepare for SQL and Python interview code tests
+          </h1>
+
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            A lightweight Next.js + Supabase app built to explore modern web
+            architecture, structured learning flows, and AI-assisted development.
+          </p>
+
+          <div className="flex justify-center gap-4 pt-4">
+            <a
+              href="/dashboard"
+              className="px-6 py-3 rounded-lg bg-black text-white hover:bg-gray-800 transition"
+            >
+              View Demo
+            </a>
+            <a
+              href="https://github.com/dhoyle/quick-code-test-prep"
+              target="_blank"
+              className="px-6 py-3 rounded-lg border border-gray-300 hover:bg-gray-100 transition"
+            >
+              View GitHub
+            </a>
+          </div>
+        </section>
+
+        {/* WHY */}
+        <section className="mt-20 grid gap-6 sm:grid-cols-3">
+          {[
+            {
+              title: "Modern stack",
+              desc: "Next.js, TypeScript, Supabase, and Vercel deployment.",
+            },
+            {
+              title: "Structured practice",
+              desc: "Crash course → warmups → timed tests.",
+            },
+            {
+              title: "AI-assisted workflow",
+              desc: "Used AI to accelerate build, debugging, and iteration.",
+            },
+          ].map((item) => (
+            <div
+              key={item.title}
+              className="border rounded-xl p-6 bg-white shadow-sm"
+            >
+              <h3 className="font-semibold text-lg">{item.title}</h3>
+              <p className="text-sm text-gray-600 mt-2">{item.desc}</p>
+            </div>
+          ))}
+        </section>
+
+        {/* FEATURES */}
+        <section className="mt-20 space-y-6">
+          <h2 className="text-2xl font-semibold text-center">
+            What’s included
+          </h2>
+
+          <ul className="max-w-xl mx-auto text-gray-700 space-y-3 text-center">
+            <li>Crash Courses for core SQL and Python concepts</li>
+            <li>Warmup tests for low-pressure practice</li>
+            <li>Timed tests to simulate interviews</li>
+            <li>Authentication + session tracking</li>
+            <li>Supabase-backed persistence</li>
+          </ul>
+        </section>
+
+        {/* LEARNINGS */}
+        <section className="mt-20 max-w-2xl mx-auto text-center space-y-4">
+          <h2 className="text-2xl font-semibold">What I learned</h2>
+
+          <p className="text-gray-600">
+            This project was built to gain hands-on experience with modern frontend tools:
+            structuring a Next.js app, integrating Supabase for auth and data,
+            deploying through Vercel, and using AI tools to accelerate development.
+          </p>
+        </section>
+
+        {/* PRODUCT DECISION */}
+        <section className="mt-20 max-w-2xl mx-auto text-center space-y-4">
+          <h2 className="text-2xl font-semibold">Why I stopped here</h2>
+
+          <p className="text-gray-600">
+            After building the MVP, I evaluated the market and found strong
+            existing platforms that already serve this space well. Rather than expand
+            the product, I’m sharing it as a portfolio project that demonstrates
+            implementation, iteration, and technical decision-making.
+          </p>
+        </section>
+
+        <section className="mt-20 max-w-3xl mx-auto space-y-4">
+          <h2 className="text-2xl font-semibold text-center">
+            Building this project
+          </h2>
+
+          <p className="text-gray-600">
+            I built Quick Code Test Prep to gain hands-on experience with a modern web stack, and
+            to better understand how AI can accelerate real-world product development. I
+            wanted a project that required more than static content: routing,
+            authentication, persistence, deployment, and a functional end-to-end user flow.
+          </p>
+
+          <p className="text-gray-600">
+            The application uses Next.js, TypeScript, Supabase, and Vercel. Building it
+            gave me practical experience with App Router structure, protected routes,
+            production deployment, and the small implementation details that determine
+            whether an app feels usable or fragile. It also gave me a chance to work in
+            the kind of tight build-feedback loop that modern deployment platforms make
+            possible.
+          </p>
+
+          <p className="text-gray-600">
+            AI tools helped me move faster, especially when scaffolding components,
+            debugging issues, and exploring unfamiliar patterns. But they did not
+            replace human judgment. I still had to decide how the app should be structured,
+            and how the demo user experience should work. AI was a facilitator, but the product decisions were all mine.
+          </p>
+
+          <p className="text-gray-600">
+            After building the MVP, I evaluated the market and concluded that established
+            platforms already served this space well. Rather than continue developing the
+            app, I decided to use it as a portfolio project that demonstrates technical
+            communication, implementation, and product thinking.
+          </p>
+        </section>       
+
+        {/* FOOTER */}
+        <footer className="mt-24 pt-10 border-t text-center text-sm text-gray-500 space-y-2">
+          <p>Built by David Hoyle</p>
+          <div className="flex justify-center gap-4">
+            <a href="/privacy" className="hover:underline">
+              Privacy
+            </a>
+            <a href="/terms" className="hover:underline">
+              Terms
+            </a>
+          </div>
+        </footer>
+      </div>
+    </main>
+  );
+}
+=== src/app/privacy/page.tsx ===
+export default function PrivacyPage() {
+  return (
+    <main className="max-w-3xl mx-auto px-6 py-16 space-y-6">
+      <h1 className="text-3xl font-bold">Privacy Policy</h1>
+
+      <p>
+        This site is a portfolio and demonstration project.
+      </p>
+
+      <h2 className="text-xl font-semibold">Information collected</h2>
+      <p>
+        The app may collect basic account information (such as email) and usage
+        data required to operate features like authentication and session tracking.
+      </p>
+
+      <h2 className="text-xl font-semibold">How information is used</h2>
+      <p>
+        Information is used solely to provide app functionality and is not sold or
+        shared for marketing purposes.
+      </p>
+
+      <h2 className="text-xl font-semibold">Third-party services</h2>
+      <p>
+        This project uses services such as Vercel (hosting) and Supabase
+        (authentication and database).
+      </p>
+
+      <h2 className="text-xl font-semibold">Contact</h2>
+          <p>
+              For questions, please use the <a href="/contact" className="underline">contact form</a>.
+          </p>
+    </main>
+  );
+}
+=== src/app/signup/page.tsx ===
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/browser";
+
+export default function SignupPage() {
+  const supabase = createClient();
+  const router = useRouter();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSignup(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setMessage(null);
+
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+
+    setLoading(false);
+
+    if (error) {
+      setError(error.message);
+      return;
+    }
+
+    setMessage("Check your email for the confirmation link, or log in if confirmations are disabled.");
+    router.refresh();
+  }
+
+  return (
+    <main className="mx-auto max-w-md p-8">
+      <h1 className="mb-6 text-2xl font-bold">Sign up</h1>
+
+      <form onSubmit={handleSignup} className="space-y-4">
+        <input
+          className="w-full rounded border p-2"
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+
+        <input
+          className="w-full rounded border p-2"
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+
+        <button
+          className="rounded border px-4 py-2"
+          type="submit"
+          disabled={loading}
+        >
+          {loading ? "Creating account..." : "Sign up"}
+        </button>
+      </form>
+
+      {message && <p className="mt-4 text-sm">{message}</p>}
+      {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+    </main>
+  );
+}
+=== src/app/supabase-check/page.tsx ===
+export default function SupabaseCheck() {
+  return (
+    <main style={{ padding: 24 }}>
+      <h1>Supabase Environment Check</h1>
+      <p>URL present: {String(!!process.env.NEXT_PUBLIC_SUPABASE_URL)}</p>
+      <p>Anon key present: {String(!!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)}</p>
+    </main>
+  );
+}
+=== src/app/terms/page.tsx ===
+export default function TermsPage() {
+  return (
+    <main className="max-w-3xl mx-auto px-6 py-16 space-y-6">
+      <h1 className="text-3xl font-bold">Terms of Use</h1>
+
+      <p>
+        This site is provided for educational and demonstration purposes only.
+      </p>
+
+      <h2 className="text-xl font-semibold">Use of the site</h2>
+      <p>
+        You may use this site for personal, lawful purposes. You may not misuse or
+        attempt to disrupt the service.
+      </p>
+
+      <h2 className="text-xl font-semibold">No guarantees</h2>
+      <p>
+        The site is provided "as is" without warranties of any kind.
+      </p>
+
+      <h2 className="text-xl font-semibold">Limitation of liability</h2>
+      <p>
+        The author is not liable for any damages arising from use of this site.
+      </p>
+
+      <h2 className="text-xl font-semibold">Contact</h2>
+          <p>
+              For questions, please use the <a href="/contact" className="underline">contact form</a>.
+          </p>
+    </main>
+  );
+}
+=== src/components/attempts/attempt-form.tsx ===
+"use client";
+
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { saveAttempt } from "@/actions/save-attempt";
+
+type Props = {
+  trackSlug: string;
+  lessonId: string;
+  promptTitle: string;
+  promptText: string;
+};
+
+export default function AttemptForm({
+  trackSlug,
+  lessonId,
+  promptTitle,
+  promptText,
+}: Props) {
+  const router = useRouter();
+
+  const [userAnswer, setUserAnswer] = useState("");
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    setMessage(null);
+    setError(null);
+
+    startTransition(async () => {
+      const result = await saveAttempt({
+        trackSlug,
+        lessonId,
+        promptTitle,
+        promptText,
+        userAnswer,
+        mode: "lesson",
+        questionSlug: lessonId,
+      });
+
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+
+      setMessage("Attempt submitted");
+      setUserAnswer("");
+      router.refresh();
+    });
+  }
+
+  return (
+    <section className="mt-8 rounded border p-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <textarea
+          className="min-h-[160px] w-full rounded border p-3 font-mono text-sm"
+          value={userAnswer}
+          onChange={(e) => setUserAnswer(e.target.value)}
+          placeholder="Write your answer here..."
+          disabled={isPending}
+        />
+
+        <button
+          type="submit"
+          disabled={isPending}
+          className="inline-flex cursor-pointer items-center justify-center rounded border px-4 py-2 text-sm font-medium transition hover:bg-gray-100 active:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isPending ? "Submitting..." : "Submit Attempt"}
+        </button>
+      </form>
+
+      {message && <p className="mt-3 text-green-700">{message}</p>}
+      {error && <p className="mt-3 text-red-600">{error}</p>}
+    </section>
+  );
+}
+=== src/components/attempts/attempt-history.tsx ===
+"use client";
+
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { clearAttempts } from "@/actions/clear-attempts";
+
+type AttemptResult = {
+  isCorrect?: boolean;
+  score?: number;
+  matched?: string[];
+  missing?: string[];
+  forbiddenMatched?: string[];
+};
+
+type Attempt = {
+  id: string;
+  user_answer: string;
+  created_at: string;
+  result: AttemptResult | null;
+};
+
+type Props = {
+  attempts: Attempt[];
+  trackSlug: string;
+  questionSlug: string;
+};
+
+export default function AttemptHistory({
+  attempts,
+  trackSlug,
+  questionSlug,
+}: Props) {
+  const [open, setOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+
+  if (!attempts.length) {
+    return null;
+  }
+
+  function handleClear() {
+    if (!confirm("Clear all attempts for this question?")) {
+      return;
+    }
+
+    setError(null);
+
+    startTransition(async () => {
+      const result = await clearAttempts({
+        trackSlug,
+        questionSlug,
+      });
+
+      if (!result.ok) {
+        setError(result.error ?? "Failed to clear attempts.");
+        return;
+      }
+
+      router.refresh();
+    });
+  }
+
+  return (
+    <section className="mt-6">
+      <button onClick={() => setOpen(!open)} className="underline">
+        {open
+          ? "Hide Previous Attempts"
+          : `View Previous Attempts (${attempts.length})`}
+      </button>
+
+      {open && (
+        <div className="mt-4 space-y-3">
+          <button
+            onClick={handleClear}
+            disabled={isPending}
+            className="text-sm text-red-600 underline"
+          >
+            {isPending ? "Clearing..." : "Clear Previous Attempts"}
+          </button>
+
+          {error && <p className="text-sm text-red-600">{error}</p>}
+
+          {attempts.map((attempt) => (
+            <div key={attempt.id} className="rounded border p-3 text-sm">
+              <div className="mb-2 flex items-center justify-between gap-4">
+                <div className="text-xs text-gray-500">
+                  {new Date(attempt.created_at).toLocaleString()}
+                </div>
+
+                {attempt.result && (
+                  <div className="text-xs">
+                    <span
+                      className={
+                        attempt.result.isCorrect
+                          ? "font-semibold text-green-700"
+                          : "font-semibold text-amber-700"
+                      }
+                    >
+                      {attempt.result.isCorrect ? "Correct" : "Needs work"}
+                    </span>
+
+                    {typeof attempt.result.score === "number" && (
+                      <span className="ml-2 text-gray-600">
+                        {attempt.result.score}%
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <pre className="whitespace-pre-wrap font-mono">
+                {attempt.user_answer}
+              </pre>
+
+              {attempt.result?.missing &&
+                attempt.result.missing.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-xs font-medium text-gray-700">
+                      Missing elements:
+                    </p>
+                    <ul className="mt-1 list-disc pl-5 text-xs text-gray-600">
+                      {attempt.result.missing.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+              {attempt.result?.forbiddenMatched &&
+                attempt.result.forbiddenMatched.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-xs font-medium text-gray-700">
+                      Problematic elements:
+                    </p>
+                    <ul className="mt-1 list-disc pl-5 text-xs text-gray-600">
+                      {attempt.result.forbiddenMatched.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+=== src/components/auth/logout-button.tsx ===
+"use client";
+
+import { createClient } from "@/lib/supabase/browser";
+import { useRouter } from "next/navigation";
+
+export default function LogoutButton() {
+  const supabase = createClient();
+  const router = useRouter();
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
+
+  return (
+    <button className="mt-6 rounded border px-4 py-2" onClick={handleLogout}>
+      Log out
+    </button>
+  );
+}
+=== src/components/layout/dashboard-sidebar.tsx ===
+import Link from "next/link";
+
+export default function DashboardSidebar() {
+  return (
+    <aside className="w-64 shrink-0 border-r p-6">
+      <h2 className="text-xl font-semibold">Quick Code Test Prep</h2>
+
+      <nav className="mt-6 space-y-4">
+        <div>
+          <Link href="/dashboard" className="text-base underline">
+            Dashboard
+          </Link>
+        </div>
+
+        <div>
+          <p className="mb-2 text-base font-semibold text-gray-500">Tracks</p>
+          <ul className="space-y-2">
+            <li>
+              <Link href="/dashboard/sql" className="text-base underline">
+                SQL Interview Prep
+              </Link>
+            </li>
+            <li>
+              <Link href="/dashboard/python" className="text-base underline">
+                Python Interview Prep
+              </Link>
+            </li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+  );
+}
+=== src/components/layout/track-sidebar-client.tsx ===
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import type { TrackQuestion } from "@/lib/question-types";
+
+type Track = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+};
+
+type Lesson = {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string | null;
+  lesson_order: number;
+  track_id: string;
+};
+
+type WarmupProgressMap = Record<
+  string,
+  {
+    bestScore: number;
+    isComplete: boolean;
+  }
+>;
+
+type Props = {
+  track: string;
+  trackTitle: string;
+  lessons: Lesson[];
+  warmupQuestions: TrackQuestion[];
+  warmupProgress: WarmupProgressMap;
+  bestTimedScore: number | null;
+  otherTracks: Track[];
+};
+
+function itemClasses(isActive: boolean) {
+  const base = "block rounded px-2 py-1 text-base";
+
+  return isActive
+    ? `${base} border-l-2 border-black bg-gray-100 font-semibold text-black`
+    : `${base} text-gray-700 hover:bg-gray-50 hover:underline`;
+}
+
+function topLinkClasses(isActive: boolean) {
+  return isActive
+    ? "block rounded px-2 py-1 text-base font-semibold text-black"
+    : "block rounded px-2 py-1 text-base text-gray-700 hover:bg-gray-50 hover:underline";
+}
+
+export default function TrackSidebarClient({
+  track,
+  trackTitle,
+  lessons,
+  warmupQuestions,
+  warmupProgress,
+  bestTimedScore,
+  otherTracks,
+}: Props) {
+  const pathname = usePathname();
+
+  const trackHref = `/dashboard/${track}`;
+  const timedHref = `/dashboard/${track}/timed`;
+  const timedHistoryHref = `/dashboard/${track}/timed/history`;
+
+  return (
+    <aside className="w-72 shrink-0 border-r p-6">
+      <h2 className="text-xl font-semibold">Quick Code Test Prep</h2>
+
+      <nav className="mt-6 space-y-6">
+        <div>
+          <Link
+            href="/dashboard"
+            className={topLinkClasses(pathname === "/dashboard")}
+          >
+            Dashboard
+          </Link>
+        </div>
+
+        <div>
+          <p className="px-2 text-base font-semibold text-gray-500">
+            Current Track
+          </p>
+          <div className="mt-2">
+            <Link
+              href={trackHref}
+              className={topLinkClasses(pathname === trackHref)}
+            >
+              {trackTitle}
+            </Link>
+          </div>
+        </div>
+
+        <div>
+          <p className="px-2 text-base font-semibold text-gray-500">
+            Crash Course
+          </p>
+          <ul className="mt-2 space-y-1">
+            {lessons.map((lesson) => {
+              const href = `/dashboard/${track}/crash-course/${lesson.slug}`;
+              const isActive = pathname === href;
+
+              return (
+                <li key={lesson.id}>
+                  <Link href={href} className={itemClasses(isActive)}>
+                    {lesson.lesson_order}. {lesson.title}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+
+        <div>
+          <p className="px-2 text-base font-semibold text-gray-500">
+            Practice Tests
+          </p>
+
+          <div className="mt-2">
+            <p className="px-2 text-base font-semibold text-gray-500">
+              Warmup Tests
+            </p>
+
+            {warmupQuestions.length > 0 && (
+              <ul className="ml-4 mt-2 space-y-1">
+                {warmupQuestions.map((question, index) => {
+                  const href = `/dashboard/${track}/warmup/${question.slug}`;
+                  const isActive = pathname === href;
+                  const progress = warmupProgress[question.slug];
+
+                  return (
+                    <li key={question.slug}>
+                      <Link
+                        href={href}
+                        className={`${itemClasses(
+                          isActive
+                        )} flex items-center justify-between`}
+                      >
+                        <span>
+                          {index + 1}. {question.title}
+                        </span>
+
+                        {progress && (
+                          <span className="text-sm text-gray-500">
+                            {progress.isComplete ? "✓" : `${progress.bestScore}%`}
+                          </span>
+                        )}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
+          <div className="mt-4">
+            <Link
+              href={timedHref}
+              className={`${topLinkClasses(
+                pathname === timedHref || pathname.startsWith(`${timedHref}/`)
+              )} flex items-center justify-between`}
+            >
+              <span>Timed Test</span>
+              {bestTimedScore !== null && (
+                <span className="text-sm text-gray-500">{bestTimedScore}%</span>
+              )}
+            </Link>
+
+            <div className="ml-4 mt-1">
+              <Link
+                href={timedHistoryHref}
+                className={itemClasses(pathname === timedHistoryHref)}
+              >
+                Timed Test History
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {otherTracks.length > 0 && (
+          <div>
+            <p className="px-2 text-base font-semibold text-gray-500">
+              Other Tracks
+            </p>
+            <ul className="mt-2 space-y-1">
+              {otherTracks.map((otherTrack) => {
+                const href = `/dashboard/${otherTrack.slug}`;
+                const isActive = pathname === href;
+
+                return (
+                  <li key={otherTrack.id}>
+                    <Link href={href} className={itemClasses(isActive)}>
+                      {otherTrack.title}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+      </nav>
+    </aside>
+  );
+}
+=== src/components/layout/track-sidebar.tsx ===
+import { createClient } from "@/lib/supabase/server";
+import { getTrackBySlug, getTracks } from "@/db/tracks";
+import { getLessonsByTrackSlug } from "@/db/lessons";
+import { getWarmupProgress } from "@/db/warmup-progress";
+import { getBestTimedScore } from "@/db/timed-progress";
+import TrackSidebarClient from "@/components/layout/track-sidebar-client";
+import { getWarmupQuestionsForTrack } from "@/data/question-bank";
+
+type Props = {
+  track: string;
+};
+
+export default async function TrackSidebar({ track }: Props) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const trackData = await getTrackBySlug(track);
+  const lessons = await getLessonsByTrackSlug(track);
+  const allTracks = await getTracks();
+
+  if (!trackData) {
+    return (
+      <aside className="w-72 shrink-0 border-r p-6">
+        <p className="text-sm text-gray-500">Track not found.</p>
+      </aside>
+    );
+  }
+
+  const otherTracks = allTracks.filter((t) => t.slug !== track);
+  const warmupQuestions = getWarmupQuestionsForTrack(track);
+
+  const warmupProgress = user
+    ? await getWarmupProgress(user.id, trackData.id)
+    : {};
+
+  const bestTimedScore = user
+    ? await getBestTimedScore(user.id, trackData.id)
+    : null;
+
+  return (
+    <TrackSidebarClient
+      track={track}
+      trackTitle={trackData.title}
+      lessons={lessons}
+      warmupQuestions={warmupQuestions}
+      warmupProgress={warmupProgress}
+      bestTimedScore={bestTimedScore}
+      otherTracks={otherTracks}
+    />
+  );
+}
+=== src/components/timed/clear-timed-history-button.tsx ===
+"use client";
+
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { clearTimedHistory } from "@/actions/clear-timed-history";
+
+type Props = {
+  track: string;
+};
+
+export default function ClearTimedHistoryButton({ track }: Props) {
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function handleClick() {
+    const confirmed = window.confirm(
+      "Clear all timed test history for this track? This cannot be undone."
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setError(null);
+
+    startTransition(async () => {
+      const result = await clearTimedHistory(track);
+
+      if (!result.ok) {
+        setError(result.error ?? "Failed to clear timed history.");
+        return;
+      }
+
+      router.refresh();
+    });
+  }
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={handleClick}
+        disabled={isPending}
+        className="inline-flex cursor-pointer items-center justify-center rounded border px-5 py-2.5 text-base font-medium text-red-700 transition hover:bg-red-50 active:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {isPending ? "Clearing..." : "Clear Timed Test History"}
+      </button>
+
+      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+    </div>
+  );
+}
+=== src/components/timed/start-timed-test-button.tsx ===
+"use client";
+
+import { useRouter } from "next/navigation";
+import { startTimedTest } from "@/actions/start-timed-test";
+import { useState, useTransition } from "react";
+
+type Props = {
+  track: string;
+  activeSessionId: string | null;
+};
+
+export default function StartTimedTestButton({
+  track,
+  activeSessionId,
+}: Props) {
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function handleClick() {
+    setError(null);
+
+    startTransition(async () => {
+      if (activeSessionId) {
+        router.push(`/dashboard/${track}/timed/start/${activeSessionId}`);
+        return;
+      }
+
+      const result = await startTimedTest(track);
+
+      if (!result.ok || !result.sessionId) {
+        setError(result.error ?? "Failed to start timed test.");
+        return;
+      }
+
+      router.push(`/dashboard/${track}/timed/start/${result.sessionId}`);
+    });
+  }
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={handleClick}
+        disabled={isPending}
+        className="inline-flex cursor-pointer items-center justify-center rounded border bg-white px-5 py-2.5 text-base font-medium transition hover:bg-gray-100 active:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {isPending
+          ? "Starting..."
+          : activeSessionId
+            ? "Resume Timed Test"
+            : "Start Timed Test"}
+      </button>
+
+      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+    </div>
+  );
+}
+=== src/components/timed/timed-test-session.tsx ===
+"use client";
+
+import TimedTest from "@/components/timed/timed-test";
+import type { TrackQuestion } from "@/lib/question-types";
+
+type Props = {
+  track: string;
+  sessionId: string;
+  questions: TrackQuestion[];
+  durationSeconds?: number;
+  startedAt?: string | null;
+};
+
+export default function TimedTestSession(props: Props) {
+  return <TimedTest {...props} />;
+}
+=== src/components/timed/timed-test.tsx ===
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import { checkTrackAttempt } from "@/lib/track-checker";
+import { saveTimedTest } from "@/actions/save-timed-test";
+import type {
+  QuestionDifficulty,
+  TrackQuestion,
+} from "@/lib/question-types";
+import {
+  getDifficultyClasses,
+  getDifficultyLabel,
+} from "@/data/question-bank";
+
+type Props = {
+  track: string;
+  sessionId: string;
+  questions: TrackQuestion[];
+  durationSeconds?: number;
+  startedAt?: string | null;
+};
+
+type PerQuestionResult = {
+  slug: string;
+  title: string;
+  promptText: string;
+  difficulty: QuestionDifficulty;
+  userAnswer: string;
+  score: number;
+  isCorrect: boolean;
+  missing: string[];
+  forbiddenMatched: string[];
+  unexpectedColumns: string[];
+};
+
+function getDraftStorageKey(sessionId: string) {
+  return `timed-test-draft:${sessionId}`;
+}
+
+function getRemainingSeconds(
+  durationSeconds: number,
+  startedAt?: string | null
+) {
+  if (!startedAt) {
+    return durationSeconds;
+  }
+
+  const startedAtMs = new Date(startedAt).getTime();
+
+  if (Number.isNaN(startedAtMs)) {
+    return durationSeconds;
+  }
+
+  const elapsedSeconds = Math.floor((Date.now() - startedAtMs) / 1000);
+  return Math.max(0, durationSeconds - elapsedSeconds);
+}
+
+function getTrackLabel(track: string) {
+  return track === "python" ? "Python" : "SQL";
+}
+
+function getPlaceholder(track: string) {
+  return track === "python"
+    ? "Write your Python function here..."
+    : "Write your SQL query here...";
+}
+
+function getDifficultySummary(questions: TrackQuestion[]) {
+  const counts = {
+    easy: 0,
+    medium: 0,
+    hard: 0,
+  };
+
+  for (const question of questions) {
+    counts[question.difficulty] += 1;
+  }
+
+  return [
+    counts.easy > 0 ? `${counts.easy} Easy` : null,
+    counts.medium > 0 ? `${counts.medium} Medium` : null,
+    counts.hard > 0 ? `${counts.hard} Hard` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+export default function TimedTest({
+  track,
+  sessionId,
+  questions,
+  durationSeconds = 30 * 60,
+  startedAt,
+}: Props) {
+  const [timeLeft, setTimeLeft] = useState(durationSeconds);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [results, setResults] = useState<PerQuestionResult[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [draftLoaded, setDraftLoaded] = useState(false);
+  const [timerInitialized, setTimerInitialized] = useState(false);
+
+  useEffect(() => {
+    try {
+      const savedDraft = window.localStorage.getItem(
+        getDraftStorageKey(sessionId)
+      );
+
+      if (savedDraft) {
+        const parsed = JSON.parse(savedDraft);
+
+        if (parsed && typeof parsed === "object") {
+          setAnswers(parsed as Record<string, string>);
+        }
+      }
+    } catch {
+      // Ignore malformed local draft data.
+    } finally {
+      setDraftLoaded(true);
+    }
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (!draftLoaded || isSubmitted) return;
+
+    try {
+      window.localStorage.setItem(
+        getDraftStorageKey(sessionId),
+        JSON.stringify(answers)
+      );
+    } catch {
+      // Ignore localStorage write failures.
+    }
+  }, [answers, draftLoaded, isSubmitted, sessionId]);
+
+  useEffect(() => {
+    setTimeLeft(getRemainingSeconds(durationSeconds, startedAt));
+    setTimerInitialized(true);
+  }, [durationSeconds, startedAt]);
+
+  useEffect(() => {
+    if (!timerInitialized || isSubmitted || timeLeft <= 0) return;
+
+    const timer = window.setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          window.clearInterval(timer);
+          return 0;
+        }
+
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [isSubmitted, timeLeft, timerInitialized]);
+
+  useEffect(() => {
+    if (!timerInitialized) return;
+
+    if (timeLeft === 0 && !isSubmitted) {
+      void handleSubmit();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeLeft, isSubmitted, timerInitialized]);
+
+  function handleAnswerChange(slug: string, value: string) {
+    setAnswers((prev) => ({
+      ...prev,
+      [slug]: value,
+    }));
+  }
+
+  async function handleSubmit() {
+    const graded = questions.map((question) => {
+      const answer = answers[question.slug] ?? "";
+
+      const result = checkTrackAttempt({
+        track,
+        userAnswer: answer,
+        question,
+      });
+
+      return {
+        slug: question.slug,
+        title: question.title,
+        promptText: question.promptText,
+        difficulty: question.difficulty,
+        userAnswer: answer,
+        score: result.score,
+        isCorrect: result.isCorrect,
+        missing: result.missing,
+        forbiddenMatched: result.forbiddenMatched,
+        unexpectedColumns: result.unexpectedColumns ?? [],
+      };
+    });
+
+    setResults(graded);
+    setIsSubmitted(true);
+    setIsSaving(true);
+    setSaveMessage(null);
+
+    const saveResult = await saveTimedTest({
+      trackSlug: track,
+      sessionId,
+      questions: graded.map((item) => ({
+        slug: item.slug,
+        title: item.title,
+        promptText: item.promptText,
+        userAnswer: item.userAnswer,
+        result: {
+          isCorrect: item.isCorrect,
+          score: item.score,
+          missing: item.missing,
+          forbiddenMatched: item.forbiddenMatched,
+          unexpectedColumns: item.unexpectedColumns,
+        },
+      })),
+    });
+
+    if (saveResult.ok) {
+      try {
+        window.localStorage.removeItem(getDraftStorageKey(sessionId));
+      } catch {
+        // Ignore localStorage remove failures.
+      }
+
+      setSaveMessage("Timed test saved");
+    } else {
+      setSaveMessage(saveResult.error ?? "Failed to save timed test");
+    }
+
+    setIsSaving(false);
+  }
+
+  const overallScore = useMemo(() => {
+    if (!results.length) return 0;
+    const total = results.reduce((sum, result) => sum + result.score, 0);
+    return Math.round(total / results.length);
+  }, [results]);
+
+  const difficultySummary = useMemo(
+    () => getDifficultySummary(questions),
+    [questions]
+  );
+
+  const minutes = Math.floor(timeLeft / 60);
+  const seconds = timeLeft % 60;
+
+  if (isSubmitted) {
+    return (
+      <section className="mt-8 space-y-6">
+        <div className="rounded border bg-gray-50 p-4">
+          <h2 className="text-xl font-semibold">Timed Test Results</h2>
+          <p className="mt-2 text-gray-700">Overall score: {overallScore}%</p>
+
+          {saveMessage && (
+            <p className="mt-2 text-sm text-gray-600">
+              {isSaving ? "Saving..." : saveMessage}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-4">
+          {results.map((result, index) => (
+            <div key={result.slug} className="rounded border p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <p className="font-medium">
+                    {index + 1}. {result.title}
+                  </p>
+                  <span className={getDifficultyClasses(result.difficulty)}>
+                    {getDifficultyLabel(result.difficulty)}
+                  </span>
+                </div>
+
+                <p
+                  className={
+                    result.isCorrect
+                      ? "font-semibold text-green-700"
+                      : "font-semibold text-amber-700"
+                  }
+                >
+                  {result.isCorrect ? "Correct" : "Needs work"} — {result.score}%
+                </p>
+              </div>
+
+              <div className="prose mt-3 max-w-none prose-p:my-0 prose-code:before:content-none prose-code:after:content-none prose-code:rounded prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:font-mono prose-code:font-normal prose-code:text-[1em]">
+                <ReactMarkdown>{result.promptText}</ReactMarkdown>
+              </div>
+
+              <pre className="mt-3 whitespace-pre-wrap rounded bg-gray-50 p-3 font-mono text-sm">
+                {result.userAnswer || "(No answer submitted)"}
+              </pre>
+
+              {result.missing.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-sm font-medium text-gray-700">
+                    Missing elements
+                  </p>
+                  <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
+                    {result.missing.map((item, itemIndex) => (
+                      <li key={`${result.slug}-missing-${item}-${itemIndex}`}>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {result.forbiddenMatched.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-sm font-medium text-gray-700">
+                    Problematic elements
+                  </p>
+                  <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
+                    {result.forbiddenMatched.map((item, itemIndex) => (
+                      <li
+                        key={`${result.slug}-forbidden-${item}-${itemIndex}`}
+                      >
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {result.unexpectedColumns.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-sm font-medium text-gray-700">
+                    Unexpected columns
+                  </p>
+                  <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
+                    {result.unexpectedColumns.map((item, itemIndex) => (
+                      <li
+                        key={`${result.slug}-unexpected-${item}-${itemIndex}`}
+                      >
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="mt-8 space-y-6">
+      <div className="sticky top-0 z-10 rounded border bg-white p-4">
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-xl font-semibold">
+            Timed {getTrackLabel(track)} Test
+          </h2>
+          <p className="font-mono text-lg" suppressHydrationWarning>
+            {String(minutes).padStart(2, "0")}:
+            {String(seconds).padStart(2, "0")}
+          </p>
+        </div>
+
+        {difficultySummary && (
+          <p className="mt-2 text-sm font-medium text-gray-700">
+            This test includes: {difficultySummary}
+          </p>
+        )}
+
+        <p className="mt-2 text-sm text-gray-600">
+          Answer all questions before time runs out. The test will auto-submit at
+          00:00.
+        </p>
+      </div>
+
+      <div className="space-y-6">
+        {questions.map((question, index) => (
+          <div key={question.slug} className="rounded border p-4">
+            <p className="text-sm text-gray-500">
+              Question {index + 1} of {questions.length}
+            </p>
+
+            <div className="mt-1 flex items-center justify-between gap-4">
+              <h3 className="text-lg font-semibold">{question.title}</h3>
+              <span className={getDifficultyClasses(question.difficulty)}>
+                {getDifficultyLabel(question.difficulty)}
+              </span>
+            </div>
+
+            <div className="prose mt-3 max-w-none prose-p:my-0 prose-code:before:content-none prose-code:after:content-none prose-code:rounded prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:font-mono prose-code:font-normal prose-code:text-[1em]">
+              <ReactMarkdown>{question.promptText}</ReactMarkdown>
+            </div>
+
+            <textarea
+              className="mt-4 min-h-[140px] w-full rounded border p-3 font-mono text-sm"
+              value={answers[question.slug] ?? ""}
+              onChange={(e) =>
+                handleAnswerChange(question.slug, e.target.value)
+              }
+              placeholder={getPlaceholder(track)}
+            />
+
+            <div className="mt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() => handleAnswerChange(question.slug, "")}
+                className="rounded border bg-white px-3 py-1.5 text-sm font-medium transition hover:bg-gray-100 active:bg-gray-200"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <button
+        type="button"
+        onClick={() => void handleSubmit()}
+        className="inline-flex cursor-pointer items-center justify-center rounded border bg-white px-5 py-2.5 text-base font-medium transition hover:bg-gray-100 active:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Submit Timed Test
+      </button>
+    </section>
+  );
+}
+=== src/components/warmup/warmup-question.tsx ===
+"use client";
+
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { saveAttempt } from "@/actions/save-attempt";
+import { checkTrackAttempt } from "@/lib/track-checker";
+import type { TrackCheckResult, TrackQuestion } from "@/lib/question-types";
+
+type Props = {
+  track: string;
+  questionSlug: string;
+  question: TrackQuestion;
+};
+
+function getPlaceholder(track: string) {
+  return track === "python"
+    ? "Write your Python function here..."
+    : "Write your SQL query here...";
+}
+
+function getCoachingMessage(
+  track: string,
+  result: TrackCheckResult
+): string | null {
+  if (result.unexpectedColumns && result.unexpectedColumns.length > 0) {
+    return "Tip: Only return the columns requested in the question.";
+  }
+
+  if (result.missingParamUsage && result.missingParamUsage.length > 0) {
+    return "Tip: Make sure you actually use the function parameters from the question in your solution.";
+  }
+
+  if (result.forbiddenMatched.length > 0) {
+    return track === "python"
+      ? "Tip: Avoid disallowed shortcuts and focus on the function structure the question is asking for."
+      : "Tip: Avoid shortcuts or disallowed elements, and focus on the exact SQL pattern the question is asking for.";
+  }
+
+  if (result.missing.length > 0) {
+    return track === "python"
+      ? "Tip: Re-read the question and make sure your function includes the required name, return behavior, and key Python elements."
+      : "Tip: Re-read the question and make sure your query includes each required SQL clause or condition.";
+  }
+
+  if (result.isCorrect) {
+    return track === "python"
+      ? "Nice work — this answer includes the required Python elements for the question."
+      : "Nice work — this answer includes the required SQL elements for the question.";
+  }
+
+  return null;
+}
+
+export default function WarmupQuestion({
+  track,
+  questionSlug,
+  question,
+}: Props) {
+  const router = useRouter();
+
+  const [answer, setAnswer] = useState("");
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [checkResult, setCheckResult] = useState<TrackCheckResult | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
+  function clearAttempt() {
+    setAnswer("");
+    setMessage(null);
+    setError(null);
+    setCheckResult(null);
+    setIsSubmitted(false);
+  }
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    if (isSubmitted) return;
+
+    setMessage(null);
+    setError(null);
+    setCheckResult(null);
+
+    startTransition(async () => {
+      const resultData = checkTrackAttempt({
+        track,
+        userAnswer: answer,
+        question,
+      });
+
+      setCheckResult(resultData);
+
+      const result = await saveAttempt({
+        trackSlug: track,
+        lessonId: `warmup-${questionSlug}`,
+        promptTitle: question.title,
+        promptText: question.promptText,
+        userAnswer: answer,
+        mode: "warmup",
+        questionSlug,
+        result: resultData,
+      });
+
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+
+      setMessage("Attempt submitted");
+      setIsSubmitted(true);
+      router.refresh();
+    });
+  }
+
+  const coachingMessage = checkResult
+    ? getCoachingMessage(track, checkResult)
+    : null;
+
+  return (
+    <section className="mt-8 rounded border p-6">
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <textarea
+          className="min-h-[180px] w-full rounded border p-4 font-mono text-base"
+          value={answer}
+          onChange={(e) => setAnswer(e.target.value)}
+          placeholder={getPlaceholder(track)}
+          disabled={false}
+        />
+
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="submit"
+            disabled={isPending || isSubmitted}
+            className="inline-flex cursor-pointer items-center justify-center rounded border px-5 py-2.5 text-base font-medium transition hover:bg-gray-100 active:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isPending
+              ? "Submitting..."
+              : isSubmitted
+                ? "Submitted"
+                : "Submit Attempt"}
+          </button>
+
+          <button
+            type="button"
+            onClick={clearAttempt}
+            disabled={isPending}
+            className="inline-flex cursor-pointer items-center justify-center rounded border bg-white px-5 py-2.5 text-base font-medium transition hover:bg-gray-100 active:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Clear
+          </button>
+        </div>
+      </form>
+
+      {message && <p className="mt-3 text-green-700">{message}</p>}
+      {error && <p className="mt-3 text-red-600">{error}</p>}
+
+      {checkResult && (
+        <div className="mt-5 rounded border bg-gray-50 p-5">
+          <div className="flex items-center justify-between gap-4">
+            <p
+              className={
+                checkResult.isCorrect
+                  ? "font-semibold text-green-700"
+                  : "font-semibold text-amber-700"
+              }
+            >
+              {checkResult.isCorrect ? "✅ Correct" : "⚠️ Needs work"}
+            </p>
+
+            <p className="text-sm font-medium text-gray-700">
+              Score: {checkResult.score}%
+            </p>
+          </div>
+
+          {checkResult.missing.length > 0 && (
+            <div className="mt-3">
+              <p className="text-sm font-medium text-gray-700">
+                Missing elements
+              </p>
+              <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
+                {checkResult.missing.map((item, itemIndex) => (
+                  <li key={`missing-${item}-${itemIndex}`}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {checkResult.missingParamUsage &&
+            checkResult.missingParamUsage.length > 0 && (
+              <div className="mt-3">
+                <p className="text-sm font-medium text-gray-700">
+                  Parameter issues
+                </p>
+                <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
+                  {checkResult.missingParamUsage.map((param, itemIndex) => (
+                    <li key={`param-${param}-${itemIndex}`}>
+                      Parameter "{param}" is not used correctly.
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+          {checkResult.forbiddenMatched.length > 0 && (
+            <div className="mt-3">
+              <p className="text-sm font-medium text-gray-700">
+                Problematic elements
+              </p>
+              <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
+                {checkResult.forbiddenMatched.map((item, itemIndex) => (
+                  <li key={`forbidden-${item}-${itemIndex}`}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {checkResult.unexpectedColumns &&
+            checkResult.unexpectedColumns.length > 0 && (
+              <div className="mt-3">
+                <p className="text-sm font-medium text-gray-700">
+                  Unexpected columns
+                </p>
+                <ul className="mt-1 list-disc pl-5 text-sm text-gray-600">
+                  {checkResult.unexpectedColumns.map((column, itemIndex) => (
+                    <li key={`unexpected-${column}-${itemIndex}`}>{column}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+          {coachingMessage && (
+            <div className="mt-4 rounded border border-blue-200 bg-blue-50 p-3">
+              <p className="text-sm font-medium text-blue-900">
+                Coaching tip
+              </p>
+              <p className="mt-1 text-sm text-blue-800">{coachingMessage}</p>
+            </div>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+=== src/data/python-warmup-questions.ts ===
+import type { PythonQuestion } from "@/lib/question-types";
+
+export const PYTHON_WARMUP_QUESTIONS: PythonQuestion[] = [
+  {
+    track: "python",
+    difficulty: "easy",
+    slug: "add-two-numbers",
+    title: "Add Two Numbers",
+    promptText:
+      "Write a function named `add_numbers` that takes `a` and `b` and returns their sum.",
+    expectedFunctionName: "add_numbers",
+    requiredTokens: ["def add_numbers", "return", "+"],
+    acceptedPatterns: [
+      "def add_numbers(a, b): return a + b",
+      "def add_numbers(a,b): return a+b",
+    ],
+  },
+  {
+    track: "python",
+    difficulty: "easy",
+    slug: "is-even",
+    title: "Check Even Number",
+    promptText:
+      "Write a function named `is_even` that takes `n` and returns `True` if `n` is even, otherwise `False`.",
+    expectedFunctionName: "is_even",
+    requiredTokens: ["def is_even", "return", "%", "== 0"],
+    acceptedPatterns: ["def is_even(n): return n % 2 == 0"],
+  },
+  {
+    track: "python",
+    difficulty: "easy",
+    slug: "first-item",
+    title: "First Item in List",
+    promptText:
+      "Write a function named `first_item` that takes a list `items` and returns the first element.",
+    expectedFunctionName: "first_item",
+    requiredTokens: ["def first_item", "return", "[0]"],
+    acceptedPatterns: ["def first_item(items): return items[0]"],
+  },
+  {
+    track: "python",
+    difficulty: "medium",
+    slug: "reverse-string",
+    title: "Reverse String",
+    promptText:
+      "Write a function named `reverse_string` that takes a string `text` and returns the reversed string.",
+    expectedFunctionName: "reverse_string",
+    requiredTokens: ["def reverse_string", "return"],
+    acceptedPatterns: ["def reverse_string(text): return text[::-1]"],
+  },
+  {
+    track: "python",
+    difficulty: "easy",
+    slug: "sum-list",
+    title: "Sum a List",
+    promptText:
+      "Write a function named `sum_list` that takes a list of numbers and returns the total.",
+    expectedFunctionName: "sum_list",
+    requiredTokens: ["def sum_list", "return"],
+    acceptedPatterns: [
+      "def sum_list(numbers): return sum(numbers)",
+      "def sum_list(nums): return sum(nums)",
+    ],
+  },
+  {
+    track: "python",
+    difficulty: "medium",
+    slug: "find-max",
+    title: "Find Maximum",
+    promptText:
+      "Write a function named `find_max` that takes a list of numbers and returns the largest value.",
+    expectedFunctionName: "find_max",
+    requiredTokens: ["def find_max", "return"],
+    acceptedPatterns: [
+      "def find_max(numbers): return max(numbers)",
+      "def find_max(nums): return max(nums)",
+    ],
+  },
+  {
+    track: "python",
+    difficulty: "medium",
+    slug: "filter-evens",
+    title: "Filter Even Numbers",
+    promptText:
+      "Write a function named `filter_evens` that takes a list of numbers and returns a new list containing only the even numbers.",
+    expectedFunctionName: "filter_evens",
+    requiredTokens: ["def filter_evens", "return"],
+    acceptedPatterns: [
+      "def filter_evens(numbers): return [n for n in numbers if n % 2 == 0]",
+      "def filter_evens(nums): return [n for n in nums if n % 2 == 0]",
+    ],
+  },
+  {
+    track: "python",
+    difficulty: "medium",
+    slug: "count-items",
+    title: "Count Items with Dictionary",
+    promptText:
+      "Write a function named `count_items` that takes a list `items` and returns a dictionary with counts for each item.",
+    expectedFunctionName: "count_items",
+    requiredTokens: ["def count_items", "for", "return"],
+    acceptedPatterns: [
+      "def count_items(items): counts = {}; for item in items: counts[item] = counts.get(item, 0) + 1; return counts",
+    ],
+  },
+  {
+    track: "python",
+    difficulty: "medium",
+    slug: "count-vowels",
+    title: "Count Vowels",
+    promptText:
+      "Write a function named `count_vowels` that takes a string `text` and returns the number of vowels in it.",
+    expectedFunctionName: "count_vowels",
+    requiredTokens: ["def count_vowels", "for", "return"],
+    acceptedPatterns: [
+      "def count_vowels(text): return sum(1 for ch in text if ch.lower() in 'aeiou')",
+    ],
+  },
+  {
+    track: "python",
+    difficulty: "easy",
+    slug: "contains-value",
+    title: "Check List Contains Value",
+    promptText:
+      "Write a function named `contains_value` that takes a list `items` and a `target` value and returns `True` if `target` is in the list, otherwise `False`.",
+    expectedFunctionName: "contains_value",
+    requiredTokens: ["def contains_value", "return", "in"],
+    acceptedPatterns: [
+      "def contains_value(items, target): return target in items",
+    ],
+  },
+  {
+    track: "python",
+    difficulty: "easy",
+    slug: "string-length",
+    title: "String Length",
+    promptText:
+      "Write a function named `string_length` that takes a string `text` and returns its length.",
+    expectedFunctionName: "string_length",
+    requiredTokens: ["def string_length", "return"],
+    acceptedPatterns: [
+      "def string_length(text): return len(text)",
+      "def string_length(s): return len(s)",
+    ],
+  },
+  {
+    track: "python",
+    difficulty: "medium",
+    slug: "normalize-text",
+    title: "Normalize Text",
+    promptText:
+      "Write a function named `normalize_text` that takes a string `text` and returns the lowercase version with leading and trailing spaces removed.",
+    expectedFunctionName: "normalize_text",
+    requiredTokens: ["def normalize_text", "return", ".strip()", ".lower()"],
+    acceptedPatterns: [
+      "def normalize_text(text): return text.strip().lower()",
+      "def normalize_text(text): return text.lower().strip()",
+    ],
+  },
+  {
+    track: "python",
+    difficulty: "easy",
+    slug: "get-score",
+    title: "Dictionary Lookup",
+    promptText:
+      "Write a function named `get_score` that takes a dictionary `scores` and a `name`, and returns the value for that name.",
+    expectedFunctionName: "get_score",
+    requiredTokens: ["def get_score", "return"],
+    acceptedPatterns: [
+      "def get_score(scores, name): return scores[name]",
+      "def get_score(scores, name): return scores.get(name, 0)",
+    ],
+  },
+  {
+    track: "python",
+    difficulty: "easy",
+    slug: "has-key",
+    title: "Check Dictionary Key",
+    promptText:
+      "Write a function named `has_key` that takes a dictionary `data` and a `key`, and returns `True` if the key exists in the dictionary, otherwise `False`.",
+    expectedFunctionName: "has_key",
+    requiredTokens: ["def has_key", "return", "in"],
+    acceptedPatterns: ["def has_key(data, key): return key in data"],
+  },
+  {
+    track: "python",
+    difficulty: "hard",
+    slug: "unique-items",
+    title: "Unique Items with Set",
+    promptText:
+      "Write a function named `unique_items` that takes a list `items` and returns a set of the unique values.",
+    expectedFunctionName: "unique_items",
+    requiredTokens: ["def unique_items", "return", "set("],
+    acceptedPatterns: ["def unique_items(items): return set(items)"],
+  },
+  {
+    track: "python",
+    difficulty: "hard",
+    slug: "has-duplicate",
+    title: "Detect Duplicate",
+    promptText:
+      "Write a function named `has_duplicate` that takes a list `items` and returns `True` if any value appears more than once, otherwise `False`.",
+    expectedFunctionName: "has_duplicate",
+    requiredTokens: ["def has_duplicate", "return"],
+    acceptedPatterns: [
+      "def has_duplicate(items): return len(set(items)) != len(items)",
+      "def has_duplicate(items): return len(set(items)) < len(items)",
+      "def has_duplicate(nums): return len(set(nums)) != len(nums)",
+      "def has_duplicate(nums): return len(set(nums)) < len(nums)",
+      "def has_duplicate(items): seen = set(); for item in items: if item in seen: return True; seen.add(item); return False",
+      "def has_duplicate(nums): seen = set(); for n in nums: if n in seen: return True; seen.add(n); return False",
+    ],
+  },
+  {
+    track: "python",
+    difficulty: "medium",
+    slug: "square-list",
+    title: "Square a List",
+    promptText:
+      "Write a function named `square_list` that takes a list of numbers and returns a new list containing the square of each value.",
+    expectedFunctionName: "square_list",
+    requiredTokens: ["def square_list", "return"],
+    acceptedPatterns: [
+      "def square_list(numbers): return [n * n for n in numbers]",
+      "def square_list(nums): return [n * n for n in nums]",
+    ],
+  },
+
+  // NEW QUESTIONS
+
+  {
+    track: "python",
+    difficulty: "medium",
+    slug: "reverse-words",
+    title: "Reverse Words",
+    promptText:
+      "Write a function named `reverse_words` that takes a string `text` and returns a list of the words in reverse order.",
+    expectedFunctionName: "reverse_words",
+    requiredTokens: ["def reverse_words", "return"],
+    acceptedPatterns: [
+      "def reverse_words(text): return text.split()[::-1]",
+      "def reverse_words(text): return list(reversed(text.split()))",
+    ],
+  },
+  {
+    track: "python",
+    difficulty: "hard",
+    slug: "is-palindrome",
+    title: "Check Palindrome",
+    promptText:
+      "Write a function named `is_palindrome` that takes a string `text` and returns `True` if it reads the same forward and backward.",
+    expectedFunctionName: "is_palindrome",
+    requiredTokens: ["def is_palindrome", "return"],
+    acceptedPatterns: ["def is_palindrome(text): return text == text[::-1]"],
+  },
+  {
+    track: "python",
+    difficulty: "medium",
+    slug: "count-character",
+    title: "Count Character",
+    promptText:
+      "Write a function named `count_character` that takes a string `text` and a character `ch`, and returns how many times `ch` appears.",
+    expectedFunctionName: "count_character",
+    requiredTokens: ["def count_character", "return"],
+    acceptedPatterns: [
+      "def count_character(text, ch): return text.count(ch)",
+    ],
+  },
+  {
+    track: "python",
+    difficulty: "medium",
+    slug: "smallest-number",
+    title: "Find Smallest Number",
+    promptText:
+      "Write a function named `smallest_number` that takes a list of numbers and returns the smallest value.",
+    expectedFunctionName: "smallest_number",
+    requiredTokens: ["def smallest_number", "return"],
+    acceptedPatterns: ["def smallest_number(nums): return min(nums)"],
+  },
+  {
+    track: "python",
+    difficulty: "hard",
+    slug: "remove-duplicates",
+    title: "Remove Duplicates",
+    promptText:
+      "Write a function named `remove_duplicates` that takes a list `items` and returns a list of unique values.",
+    expectedFunctionName: "remove_duplicates",
+    requiredTokens: ["def remove_duplicates", "return"],
+    acceptedPatterns: [
+      "def remove_duplicates(items): return list(set(items))",
+    ],
+  },
+  {
+    track: "python",
+    difficulty: "medium",
+    slug: "merge-lists",
+    title: "Merge Two Lists",
+    promptText:
+      "Write a function named `merge_lists` that takes two lists `a` and `b` and returns a combined list.",
+    expectedFunctionName: "merge_lists",
+    requiredTokens: ["def merge_lists", "return"],
+    acceptedPatterns: ["def merge_lists(a, b): return a + b"],
+  },
+  {
+    track: "python",
+    difficulty: "hard",
+    slug: "invert-dictionary",
+    title: "Invert Dictionary",
+    promptText:
+      "Write a function named `invert_dictionary` that swaps keys and values in a dictionary `data`.",
+    expectedFunctionName: "invert_dictionary",
+    requiredTokens: ["def invert_dictionary", "return"],
+    acceptedPatterns: [
+      "def invert_dictionary(data): return {v: k for k, v in data.items()}",
+    ],
+  },
+  {
+    track: "python",
+    difficulty: "hard",
+    slug: "double-evens",
+    title: "Double Even Numbers",
+    promptText:
+      "Write a function named `double_evens` that takes a list of numbers and returns a new list where only the even numbers are doubled.",
+    expectedFunctionName: "double_evens",
+    requiredTokens: ["def double_evens", "return"],
+    acceptedPatterns: [
+      "def double_evens(nums): return [n * 2 if n % 2 == 0 else n for n in nums]",
+    ],
+  },
+  {
+    track: "python",
+    difficulty: "medium",
+    slug: "sum-even-numbers",
+    title: "Sum Even Numbers",
+    promptText:
+      "Write a function named `sum_even_numbers` that takes a list of numbers and returns the sum of only the even values.",
+    expectedFunctionName: "sum_even_numbers",
+    requiredTokens: ["def sum_even_numbers", "return"],
+    acceptedPatterns: [
+      "def sum_even_numbers(nums): return sum(n for n in nums if n % 2 == 0)",
+    ],
+  },
+];
+=== src/data/question-bank.ts ===
+import type {
+  QuestionDifficulty,
+  TrackQuestion,
+} from "@/lib/question-types";
+import { SQL_WARMUP_QUESTIONS } from "@/data/sql-warmup-questions";
+import { PYTHON_WARMUP_QUESTIONS } from "@/data/python-warmup-questions";
+
+export function getWarmupQuestionsForTrack(track: string): TrackQuestion[] {
+  switch (track) {
+    case "sql":
+      return SQL_WARMUP_QUESTIONS;
+    case "python":
+      return PYTHON_WARMUP_QUESTIONS;
+    default:
+      return [];
+  }
+}
+
+export function getQuestionsForTrackAndDifficulty(
+  track: string,
+  difficulty: QuestionDifficulty
+): TrackQuestion[] {
+  return getWarmupQuestionsForTrack(track).filter(
+    (question) => question.difficulty === difficulty
+  );
+}
+
+function shuffleArray<T>(items: T[]): T[] {
+  const copy = [...items];
+
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+
+  return copy;
+}
+
+export function getTimedQuestionsForTrack(track: string): TrackQuestion[] {
+  const questions = getWarmupQuestionsForTrack(track);
+
+  const easy = questions.filter((question) => question.difficulty === "easy");
+  const medium = questions.filter(
+    (question) => question.difficulty === "medium"
+  );
+  const hard = questions.filter((question) => question.difficulty === "hard");
+
+  const preferredMix = [
+    ...shuffleArray(easy).slice(0, 2),
+    ...shuffleArray(medium).slice(0, 2),
+    ...shuffleArray(hard).slice(0, 1),
+  ];
+
+  if (preferredMix.length >= 5) {
+    return preferredMix;
+  }
+
+  return shuffleArray(questions);
+}
+
+export function getDifficultyLabel(difficulty: QuestionDifficulty) {
+  switch (difficulty) {
+    case "easy":
+      return "Easy";
+    case "medium":
+      return "Medium";
+    case "hard":
+      return "Hard";
+  }
+}
+
+export function getDifficultyClasses(difficulty: QuestionDifficulty) {
+  switch (difficulty) {
+    case "easy":
+      return "rounded bg-green-50 px-2.5 py-1 text-sm font-medium text-green-700";
+    case "medium":
+      return "rounded bg-blue-50 px-2.5 py-1 text-sm font-medium text-blue-700";
+    case "hard":
+      return "rounded bg-amber-50 px-2.5 py-1 text-sm font-medium text-amber-700";
+  }
+}
+=== src/data/sql-warmup-questions.ts ===
+import type { SqlQuestion } from "@/lib/question-types";
+
+export const SQL_WARMUP_QUESTIONS: SqlQuestion[] = [
+  {
+    track: "sql",
+    difficulty: "easy",
+    slug: "basic-select",
+    title: "Basic SELECT",
+    promptText:
+      "Write a SQL query that returns the `name` and `age` columns from the `users` table.",
+    expectedIncludes: ["select", "from users"],
+    forbiddenIncludes: ["serial", "*"],
+    acceptedPatterns: [
+      "select name, age from users",
+      "select age, name from users",
+    ],
+    expectedColumns: ["name", "age"],
+  },
+  {
+    track: "sql",
+    difficulty: "easy",
+    slug: "where-filter",
+    title: "WHERE Filter",
+    promptText:
+      "Write a SQL query that returns all users whose `age` is greater than or equal to `18`.",
+    expectedIncludes: ["select", "from users", "where", "age", ">=", "18"],
+  },
+  {
+    track: "sql",
+    difficulty: "easy",
+    slug: "order-by-scores",
+    title: "ORDER BY Scores",
+    promptText:
+      "Write a SQL query that returns the `name` and `score` columns from the `leaderboard` table, sorted by `score` from highest to lowest.",
+    expectedIncludes: [
+      "select",
+      "name",
+      "score",
+      "from leaderboard",
+      "order by",
+      "score",
+      "desc",
+    ],
+  },
+  {
+    track: "sql",
+    difficulty: "easy",
+    slug: "top-five-users",
+    title: "LIMIT Top 5 Users",
+    promptText:
+      "Write a SQL query that returns the top `5` users from the `leaderboard` table by `score`.",
+    expectedIncludes: [
+      "select",
+      "from leaderboard",
+      "order by",
+      "score",
+      "desc",
+      "limit 5",
+    ],
+  },
+  {
+    track: "sql",
+    difficulty: "medium",
+    slug: "count-users",
+    title: "COUNT Users",
+    promptText:
+      "Write a SQL query that returns the total number of rows in the `users` table.",
+    expectedIncludes: ["select", "count(", "from users"],
+  },
+  {
+    track: "sql",
+    difficulty: "medium",
+    slug: "group-by-department",
+    title: "GROUP BY Department",
+    promptText:
+      "Write a SQL query that returns each `department` and the number of employees in that department from the `employees` table.",
+    expectedIncludes: [
+      "select",
+      "department",
+      "count(",
+      "from employees",
+      "group by department",
+    ],
+  },
+  {
+    track: "sql",
+    difficulty: "hard",
+    slug: "having-departments",
+    title: "HAVING Departments",
+    promptText:
+      "Write a SQL query that returns departments with more than `10` employees from the `employees` table.",
+    expectedIncludes: [
+      "select",
+      "department",
+      "count(",
+      "from employees",
+      "group by department",
+      "having",
+      "> 10",
+    ],
+  },
+  {
+    track: "sql",
+    difficulty: "hard",
+    slug: "inner-join-orders",
+    title: "INNER JOIN Orders",
+    promptText:
+      "Write a SQL query that returns `users.name` and `orders.total` by joining the `users` and `orders` tables on `users.id = orders.user_id`.",
+    expectedIncludes: [
+      "select",
+      "users.name",
+      "orders.total",
+      "from users",
+      "join orders",
+      "on",
+      "users.id",
+      "orders.user_id",
+    ],
+  },
+  {
+    track: "sql",
+    difficulty: "hard",
+    slug: "left-join-orders",
+    title: "LEFT JOIN Orders",
+    promptText:
+      "Write a SQL query that returns all users and any matching order totals by left joining `users` to `orders` on `users.id = orders.user_id`.",
+    expectedIncludes: [
+      "select",
+      "users.name",
+      "orders.total",
+      "from users",
+      "left join orders",
+      "on",
+      "users.id",
+      "orders.user_id",
+    ],
+  },
+  {
+    track: "sql",
+    difficulty: "medium",
+    slug: "case-age-group",
+    title: "CASE Age Group",
+    promptText:
+      "Write a SQL query that returns `name` and a computed column `age_group` that shows `'minor'` when `age < 18` and `'adult'` otherwise.",
+    expectedIncludes: [
+      "select",
+      "name",
+      "case",
+      "when",
+      "age < 18",
+      "then 'minor'",
+      "end as age_group",
+      "from users",
+    ],
+    acceptedPatterns: [
+      "select name, case when age < 18 then 'minor' else 'adult' end as age_group from users",
+      "select name, case when age < 18 then 'minor' when age >= 18 then 'adult' end as age_group from users",
+    ],
+  },
+  {
+    track: "sql",
+    difficulty: "easy",
+    slug: "distinct-departments",
+    title: "DISTINCT Departments",
+    promptText:
+      "Write a SQL query that returns the distinct `department` names from the `employees` table.",
+    expectedIncludes: ["select", "distinct", "department", "from employees"],
+  },
+  {
+    track: "sql",
+    difficulty: "easy",
+    slug: "distinct-cities",
+    title: "DISTINCT Cities",
+    promptText:
+      "Write a SQL query that returns the distinct `city` values from the `users` table.",
+    expectedIncludes: ["select", "distinct", "city", "from users"],
+  },
+  {
+    track: "sql",
+    difficulty: "easy",
+    slug: "null-emails",
+    title: "NULL Emails",
+    promptText:
+      "Write a SQL query that returns all users whose `email` is `NULL`.",
+    expectedIncludes: ["select", "from users", "where", "email is null"],
+  },
+  {
+    track: "sql",
+    difficulty: "easy",
+    slug: "not-null-emails",
+    title: "NOT NULL Emails",
+    promptText:
+      "Write a SQL query that returns all users whose `email` is `NOT NULL`.",
+    expectedIncludes: ["select", "from users", "where", "email is not null"],
+  },
+  {
+    track: "sql",
+    difficulty: "medium",
+    slug: "between-salaries",
+    title: "BETWEEN Salaries",
+    promptText:
+      "Write a SQL query that returns all employees whose `salary` is between `50000` and `100000`.",
+    expectedIncludes: [
+      "select",
+      "from employees",
+      "where",
+      "salary between 50000 and 100000",
+    ],
+  },
+  {
+    track: "sql",
+    difficulty: "medium",
+    slug: "between-ages",
+    title: "BETWEEN Ages",
+    promptText:
+      "Write a SQL query that returns all users whose `age` is between `18` and `30`.",
+    expectedIncludes: [
+      "select",
+      "from users",
+      "where",
+      "age between 18 and 30",
+    ],
+  },
+  {
+    track: "sql",
+    difficulty: "medium",
+    slug: "in-departments",
+    title: "IN Departments",
+    promptText:
+      "Write a SQL query that returns all employees whose `department` is either `'Sales'` or `'Marketing'`.",
+    expectedIncludes: [
+      "select",
+      "from employees",
+      "where",
+      "department in",
+      "'sales'",
+      "'marketing'",
+    ],
+  },
+  {
+    track: "sql",
+    difficulty: "medium",
+    slug: "in-status",
+    title: "IN Status",
+    promptText:
+      "Write a SQL query that returns all orders whose `status` is either `'pending'` or `'shipped'`.",
+    expectedIncludes: [
+      "select",
+      "from orders",
+      "where",
+      "status in",
+      "'pending'",
+      "'shipped'",
+    ],
+  },
+];
+=== src/data/timed-questions.ts ===
+import { SQL_WARMUP_QUESTIONS } from "@/data/warmup-questions";
+
+export const SQL_TIMED_QUESTIONS = SQL_WARMUP_QUESTIONS.slice(0, 5);
+=== src/data/warmup-questions.ts ===
+export type WarmupQuestion = {
+  slug: string;
+  title: string;
+  promptText: string;
+  expectedIncludes: string[];
+  forbiddenIncludes?: string[];
+  acceptedPatterns?: string[];
+  expectedColumns?: string[];
+};
+
+export const SQL_WARMUP_QUESTIONS: WarmupQuestion[] = [
+  {
+    slug: "basic-select",
+    title: "Basic SELECT",
+    promptText:
+      "Write a SQL query that returns the name and age columns from the users table.",
+    expectedIncludes: ["select", "from users"],
+    forbiddenIncludes: ["serial", "*"],
+    acceptedPatterns: [
+      "select name, age from users",
+      "select age, name from users",
+    ],
+    expectedColumns: ["name", "age"],
+  },
+  {
+    slug: "where-filter",
+    title: "WHERE Filter",
+    promptText:
+      "Write a SQL query that returns all users whose age is greater than or equal to 18.",
+    expectedIncludes: ["select", "from users", "where", "age", ">=", "18"],
+  },
+  {
+    slug: "order-by-scores",
+    title: "ORDER BY Scores",
+    promptText:
+      "Write a SQL query that returns the name and score columns from the leaderboard table, sorted by score from highest to lowest.",
+    expectedIncludes: [
+      "select",
+      "name",
+      "score",
+      "from leaderboard",
+      "order by",
+      "score",
+      "desc",
+    ],
+  },
+  {
+    slug: "top-five-users",
+    title: "LIMIT Top 5 Users",
+    promptText:
+      "Write a SQL query that returns the top 5 users from the leaderboard table by score.",
+    expectedIncludes: [
+      "select",
+      "from leaderboard",
+      "order by",
+      "score",
+      "desc",
+      "limit 5",
+    ],
+  },
+  {
+    slug: "count-users",
+    title: "COUNT Users",
+    promptText:
+      "Write a SQL query that returns the total number of rows in the users table.",
+    expectedIncludes: ["select", "count(", "from users"],
+  },
+  {
+    slug: "group-by-department",
+    title: "GROUP BY Department",
+    promptText:
+      "Write a SQL query that returns each department and the number of employees in that department from the employees table.",
+    expectedIncludes: [
+      "select",
+      "department",
+      "count(",
+      "from employees",
+      "group by department",
+    ],
+  },
+  {
+    slug: "having-departments",
+    title: "HAVING Departments",
+    promptText:
+      "Write a SQL query that returns departments with more than 10 employees from the employees table.",
+    expectedIncludes: [
+      "select",
+      "department",
+      "count(",
+      "from employees",
+      "group by department",
+      "having",
+      "> 10",
+    ],
+  },
+  {
+    slug: "inner-join-orders",
+    title: "INNER JOIN Orders",
+    promptText:
+      "Write a SQL query that returns users.name and orders.total by joining the users and orders tables on users.id = orders.user_id.",
+    expectedIncludes: [
+      "select",
+      "users.name",
+      "orders.total",
+      "from users",
+      "join orders",
+      "on",
+      "users.id",
+      "orders.user_id",
+    ],
+  },
+  {
+    slug: "left-join-orders",
+    title: "LEFT JOIN Orders",
+    promptText:
+      "Write a SQL query that returns all users and any matching order totals by left joining users to orders on users.id = orders.user_id.",
+    expectedIncludes: [
+      "select",
+      "users.name",
+      "orders.total",
+      "from users",
+      "left join orders",
+      "on",
+      "users.id",
+      "orders.user_id",
+    ],
+  },
+  {
+    slug: "case-age-group",
+    title: "CASE Age Group",
+    promptText:
+      "Write a SQL query that returns name and a computed column age_group that shows 'minor' when age < 18 and 'adult' otherwise.",
+    expectedIncludes: [
+      "select",
+      "name",
+      "case",
+      "when",
+      "age < 18",
+      "then 'minor'",
+      "else 'adult'",
+      "end as age_group",
+      "from users",
+    ],
+  },
+
+  // DISTINCT
+  {
+    slug: "distinct-departments",
+    title: "DISTINCT Departments",
+    promptText:
+      "Write a SQL query that returns the distinct department names from the employees table.",
+    expectedIncludes: ["select", "distinct", "department", "from employees"],
+  },
+  {
+    slug: "distinct-cities",
+    title: "DISTINCT Cities",
+    promptText:
+      "Write a SQL query that returns the distinct city values from the users table.",
+    expectedIncludes: ["select", "distinct", "city", "from users"],
+  },
+
+  // NULL
+  {
+    slug: "null-emails",
+    title: "NULL Emails",
+    promptText:
+      "Write a SQL query that returns all users whose email is NULL.",
+    expectedIncludes: ["select", "from users", "where", "email is null"],
+  },
+  {
+    slug: "not-null-emails",
+    title: "NOT NULL Emails",
+    promptText:
+      "Write a SQL query that returns all users whose email is NOT NULL.",
+    expectedIncludes: ["select", "from users", "where", "email is not null"],
+  },
+
+  // BETWEEN
+  {
+    slug: "between-salaries",
+    title: "BETWEEN Salaries",
+    promptText:
+      "Write a SQL query that returns all employees whose salary is between 50000 and 100000.",
+    expectedIncludes: [
+      "select",
+      "from employees",
+      "where",
+      "salary between 50000 and 100000",
+    ],
+  },
+  {
+    slug: "between-ages",
+    title: "BETWEEN Ages",
+    promptText:
+      "Write a SQL query that returns all users whose age is between 18 and 30.",
+    expectedIncludes: [
+      "select",
+      "from users",
+      "where",
+      "age between 18 and 30",
+    ],
+  },
+
+  // IN
+  {
+    slug: "in-departments",
+    title: "IN Departments",
+    promptText:
+      "Write a SQL query that returns all employees whose department is either 'Sales' or 'Marketing'.",
+    expectedIncludes: [
+      "select",
+      "from employees",
+      "where",
+      "department in",
+      "'sales'",
+      "'marketing'",
+    ],
+  },
+  {
+    slug: "in-status",
+    title: "IN Status",
+    promptText:
+      "Write a SQL query that returns all orders whose status is either 'pending' or 'shipped'.",
+    expectedIncludes: [
+      "select",
+      "from orders",
+      "where",
+      "status in",
+      "'pending'",
+      "'shipped'",
+    ],
+  },
+];
+=== src/db/attempts.ts ===
+import { createClient } from "@/lib/supabase/server";
+
+export type AttemptResult = {
+  isCorrect?: boolean;
+  score?: number;
+  matched?: string[];
+  missing?: string[];
+  forbiddenMatched?: string[];
+};
+
+export type Attempt = {
+  id: string;
+  user_answer: string;
+  created_at: string;
+  result: AttemptResult | null;
+};
+
+export async function getRecentAttempts(
+  userId: string,
+  trackId: string,
+  questionSlug: string,
+  limit = 10
+): Promise<Attempt[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("attempts")
+    .select("id, user_answer, created_at, result")
+    .eq("user_id", userId)
+    .eq("track_id", trackId)
+    .eq("mode", "warmup")
+    .eq("question_slug", questionSlug)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(`Failed to load attempts: ${error.message}`);
+  }
+
+  return data ?? [];
+}
+=== src/db/lessons.ts ===
+import { createClient } from "@/lib/supabase/server";
+
+export type Lesson = {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string | null;
+  lesson_order: number;
+  track_id: string;
+};
+
+export async function getLessonsByTrackSlug(
+  trackSlug: string
+): Promise<Lesson[]> {
+  const supabase = await createClient();
+
+  const { data: track, error: trackError } = await supabase
+    .from("tracks")
+    .select("id")
+    .eq("slug", trackSlug)
+    .single();
+
+  if (trackError) {
+    if (trackError.code === "PGRST116") {
+      return [];
+    }
+    throw new Error(`Failed to load track: ${trackError.message}`);
+  }
+
+  const { data, error } = await supabase
+    .from("lessons")
+    .select("id, slug, title, summary, lesson_order, track_id")
+    .eq("track_id", track.id)
+    .eq("is_published", true)
+    .order("lesson_order");
+
+  if (error) {
+    throw new Error(`Failed to load lessons: ${error.message}`);
+  }
+
+  return data ?? [];
+}
+
+export async function getLessonByTrackAndSlug(
+  trackSlug: string,
+  lessonSlug: string
+): Promise<Lesson | null> {
+  const supabase = await createClient();
+
+  const { data: track, error: trackError } = await supabase
+    .from("tracks")
+    .select("id")
+    .eq("slug", trackSlug)
+    .single();
+
+  if (trackError) {
+    if (trackError.code === "PGRST116") {
+      return null;
+    }
+    throw new Error(`Failed to load track: ${trackError.message}`);
+  }
+
+  const { data, error } = await supabase
+    .from("lessons")
+    .select("id, slug, title, summary, lesson_order, track_id")
+    .eq("track_id", track.id)
+    .eq("slug", lessonSlug)
+    .single();
+
+  if (error) {
+    if (error.code === "PGRST116") {
+      return null;
+    }
+    throw new Error(`Failed to load lesson: ${error.message}`);
+  }
+
+  return data;
+}
+
+export async function getNextLesson(
+  trackId: string,
+  currentOrder: number
+) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("lessons")
+    .select("slug, title, lesson_order")
+    .eq("track_id", trackId)
+    .eq("is_published", true)
+    .gt("lesson_order", currentOrder)
+    .order("lesson_order")
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to load next lesson: ${error.message}`);
+  }
+
+  return data;
+}
+
+export async function getPreviousLesson(trackId: string, lessonOrder: number) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("lessons")
+    .select("*")
+    .eq("track_id", trackId)
+    .lt("lesson_order", lessonOrder)
+    .order("lesson_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+
+  return data;
+}
+
+export async function getLessonCount(trackId: string) {
+  const supabase = await createClient();
+
+  const { count, error } = await supabase
+    .from("lessons")
+    .select("*", { count: "exact", head: true })
+    .eq("track_id", trackId)
+    .eq("is_published", true);
+
+  if (error) {
+    throw new Error(`Failed to count lessons: ${error.message}`);
+  }
+
+  return count ?? 0;
+}
+=== src/db/timed-progress.ts ===
+import { createClient } from "@/lib/supabase/server";
+
+export async function getBestTimedScore(
+  userId: string,
+  trackId: string
+): Promise<number | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("attempts")
+    .select("session_id, result")
+    .eq("user_id", userId)
+    .eq("track_id", trackId)
+    .eq("mode", "timed");
+
+  if (error) {
+    throw new Error(`Failed to load timed progress: ${error.message}`);
+  }
+
+  const sessions: Record<string, number[]> = {};
+
+  for (const row of data ?? []) {
+    const sessionId = row.session_id as string | null;
+    const score =
+      row.result && typeof row.result === "object" && "score" in row.result
+        ? Number((row.result as { score?: number }).score ?? 0)
+        : 0;
+
+    if (!sessionId) continue;
+
+    if (!sessions[sessionId]) {
+      sessions[sessionId] = [];
+    }
+
+    sessions[sessionId].push(score);
+  }
+
+  const averages = Object.values(sessions).map((scores) =>
+    scores.length > 0
+      ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length)
+      : 0
+  );
+
+  if (averages.length === 0) {
+    return null;
+  }
+
+  return Math.max(...averages);
+}
+=== src/db/timed-session.ts ===
+import { createClient } from "@/lib/supabase/server";
+
+export type TimedSessionRow = {
+  id: string;
+  user_id: string;
+  track_id: string;
+  session_id: string;
+  started_at: string;
+  duration_seconds: number;
+  question_slugs: string[];
+  status: string;
+  completed_at: string | null;
+  overall_score: number | null;
+};
+
+export async function getActiveTimedSession(userId: string, trackId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("timed_sessions")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("track_id", trackId)
+    .eq("status", "in_progress")
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to load active timed session: ${error.message}`);
+  }
+
+  return (data as TimedSessionRow | null) ?? null;
+}
+=== src/db/timed-sessions.ts ===
+import { createClient } from "@/lib/supabase/server";
+
+type AttemptResult = {
+  isCorrect?: boolean;
+  score?: number;
+  missing?: string[];
+  forbiddenMatched?: string[];
+  unexpectedColumns?: string[];
+} | null;
+
+type TimedAttemptRow = {
+  id: string;
+  session_id: string | null;
+  prompt_title: string;
+  result: AttemptResult;
+  created_at: string;
+};
+
+type TimedSessionRow = {
+  session_id: string | null;
+  started_at: string;
+  overall_score: number | null;
+};
+
+export type TimedSessionSummary = {
+  sessionId: string;
+  createdAt: string;
+  overallScore: number;
+  attempts: Array<{
+    id: string;
+    prompt_title: string;
+    result: AttemptResult;
+    created_at: string;
+  }>;
+};
+
+export async function getTimedSessions(
+  userId: string,
+  trackId: string
+): Promise<TimedSessionSummary[]> {
+  const supabase = await createClient();
+
+  const { data: sessionData, error: sessionError } = await supabase
+    .from("timed_sessions")
+    .select("session_id, started_at, overall_score")
+    .eq("user_id", userId)
+    .eq("track_id", trackId)
+    .eq("status", "completed")
+    .order("started_at", { ascending: false });
+
+  if (sessionError) {
+    throw new Error(`Failed to load timed sessions: ${sessionError.message}`);
+  }
+
+  const sessions = (sessionData ?? []) as TimedSessionRow[];
+
+  const validSessions = sessions.filter(
+    (row): row is TimedSessionRow & { session_id: string } =>
+      typeof row.session_id === "string" && row.session_id.length > 0
+  );
+
+  if (validSessions.length === 0) {
+    return [];
+  }
+
+  const sessionIds = validSessions.map((row) => row.session_id);
+
+  const { data: attemptData, error: attemptError } = await supabase
+    .from("attempts")
+    .select("id, session_id, prompt_title, result, created_at")
+    .eq("user_id", userId)
+    .eq("track_id", trackId)
+    .eq("mode", "timed")
+    .in("session_id", sessionIds)
+    .order("created_at", { ascending: true });
+
+  if (attemptError) {
+    throw new Error(`Failed to load timed attempts: ${attemptError.message}`);
+  }
+
+  const attempts = (attemptData ?? []) as TimedAttemptRow[];
+
+  const attemptsBySessionId = new Map<string, TimedAttemptRow[]>();
+
+  for (const attempt of attempts) {
+    if (!attempt.session_id) continue;
+
+    const existing = attemptsBySessionId.get(attempt.session_id) ?? [];
+    existing.push(attempt);
+    attemptsBySessionId.set(attempt.session_id, existing);
+  }
+
+  return validSessions.map((session) => ({
+    sessionId: session.session_id,
+    createdAt: session.started_at,
+    overallScore:
+      typeof session.overall_score === "number" ? session.overall_score : 0,
+    attempts: attemptsBySessionId.get(session.session_id) ?? [],
+  }));
+}
+=== src/db/tracks.ts ===
+import { createClient } from "@/lib/supabase/server";
+
+export type Track = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+};
+
+export async function getTracks(): Promise<Track[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("tracks")
+    .select("id, slug, title, description")
+    .order("title");
+
+  if (error) {
+    throw new Error(`Failed to load tracks: ${error.message}`);
+  }
+
+  return data ?? [];
+}
+
+export async function getTrackBySlug(trackSlug: string): Promise<Track | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("tracks")
+    .select("id, slug, title, description")
+    .eq("slug", trackSlug)
+    .single();
+
+  if (error) {
+    if (error.code === "PGRST116") {
+      return null;
+    }
+    throw new Error(`Failed to load track: ${error.message}`);
+  }
+
+  return data;
+}
+=== src/db/warmup-progress.ts ===
+import { createClient } from "@/lib/supabase/server";
+
+export type WarmupProgressMap = Record<
+  string,
+  {
+    bestScore: number;
+    isComplete: boolean;
+  }
+>;
+
+export async function getWarmupProgress(
+  userId: string,
+  trackId: string
+): Promise<WarmupProgressMap> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("attempts")
+    .select("question_slug, result")
+    .eq("user_id", userId)
+    .eq("track_id", trackId)
+    .eq("mode", "warmup");
+
+  if (error) {
+    throw new Error(`Failed to load warmup progress: ${error.message}`);
+  }
+
+  const progress: WarmupProgressMap = {};
+
+  for (const row of data ?? []) {
+    const questionSlug = row.question_slug as string | null;
+    const result = row.result as { score?: number; isCorrect?: boolean } | null;
+
+    if (!questionSlug || !result) continue;
+
+    const score = typeof result.score === "number" ? result.score : 0;
+    const isCorrect = !!result.isCorrect;
+
+    if (!progress[questionSlug]) {
+      progress[questionSlug] = {
+        bestScore: score,
+        isComplete: isCorrect,
+      };
+      continue;
+    }
+
+    progress[questionSlug].bestScore = Math.max(
+      progress[questionSlug].bestScore,
+      score
+    );
+    progress[questionSlug].isComplete =
+      progress[questionSlug].isComplete || isCorrect;
+  }
+
+  return progress;
+}
+=== src/lib/python-checker.ts ===
+import type { PythonQuestion, TrackCheckResult } from "@/lib/question-types";
+
+function normalizePython(input: string) {
+  return input
+    .toLowerCase()
+    .replace(/\r\n/g, "\n")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeDisplayValue(input: string) {
+  return input.trim().replace(/\s+/g, " ");
+}
+
+function dedupeStrings(values: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const value of values) {
+    const displayValue = normalizeDisplayValue(value);
+
+    if (!displayValue) continue;
+
+    const dedupeKey = normalizePython(displayValue);
+
+    if (seen.has(dedupeKey)) continue;
+
+    seen.add(dedupeKey);
+    result.push(displayValue);
+  }
+
+  return result;
+}
+
+function extractFunctionParams(code: string): string[] {
+  const match = code.match(/def\s+\w+\s*\((.*?)\)/);
+
+  if (!match) return [];
+
+  return match[1]
+    .split(",")
+    .map((param) => param.trim())
+    .filter(Boolean);
+}
+
+function getVariableConsistencyMissing(
+  question: PythonQuestion,
+  normalized: string
+) {
+  const missing: string[] = [];
+
+  switch (question.slug) {
+    case "add-two-numbers":
+      if (!normalized.includes("a") || !normalized.includes("b")) {
+        missing.push("use parameters a and b in the returned expression");
+      }
+      break;
+
+    case "is-even":
+      if (!normalized.includes("n % 2")) {
+        missing.push("use parameter n in the even check");
+      }
+      break;
+
+    case "first-item":
+      if (!normalized.includes("items[0]")) {
+        missing.push("return items[0]");
+      }
+      break;
+
+    case "reverse-string":
+      if (!normalized.includes("text")) {
+        missing.push("use parameter text");
+      }
+      break;
+
+    case "contains-value":
+      if (!normalized.includes("target in items")) {
+        missing.push("check whether target is in items");
+      }
+      break;
+
+    default:
+      break;
+  }
+
+  return missing;
+}
+
+type CheckPythonAttemptInput = {
+  userAnswer: string;
+  question: PythonQuestion;
+};
+
+export function checkPythonAttempt({
+  userAnswer,
+  question,
+}: CheckPythonAttemptInput): TrackCheckResult {
+  const normalized = normalizePython(userAnswer);
+
+  const expectedFunctionName = question.expectedFunctionName?.trim() ?? "";
+  const requiredTokens = dedupeStrings(question.requiredTokens ?? []);
+  const forbiddenTokens = dedupeStrings(question.forbiddenTokens ?? []);
+  const acceptedPatterns = dedupeStrings(question.acceptedPatterns ?? []);
+
+  const params = extractFunctionParams(userAnswer);
+  const variableConsistencyMissing = getVariableConsistencyMissing(
+    question,
+    normalized
+  );
+
+  const normalizedAcceptedPatterns = acceptedPatterns.map(normalizePython);
+
+  const exactAccepted =
+    normalizedAcceptedPatterns.length > 0 &&
+    normalizedAcceptedPatterns.includes(normalized);
+
+  const functionNameMatched = expectedFunctionName
+    ? normalized.includes(normalizePython(`def ${expectedFunctionName}`))
+    : true;
+
+  const missingParamUsage = dedupeStrings(
+    params.filter((param) => !normalized.includes(normalizePython(param)))
+  );
+
+  const matched = dedupeStrings([
+    ...(functionNameMatched && expectedFunctionName
+      ? [`def ${expectedFunctionName}`]
+      : []),
+    ...requiredTokens.filter((token) =>
+      normalized.includes(normalizePython(token))
+    ),
+  ]);
+
+  const missing = dedupeStrings([
+    ...(!functionNameMatched && expectedFunctionName
+      ? [`def ${expectedFunctionName}`]
+      : []),
+    ...requiredTokens.filter(
+      (token) => !normalized.includes(normalizePython(token))
+    ),
+    ...variableConsistencyMissing,
+  ]);
+
+  const forbiddenMatched = dedupeStrings(
+    forbiddenTokens.filter((token) =>
+      normalized.includes(normalizePython(token))
+    )
+  );
+
+  const totalExpectedCount =
+    requiredTokens.length +
+    (expectedFunctionName ? 1 : 0) +
+    variableConsistencyMissing.length;
+
+  const baseScore =
+    totalExpectedCount === 0
+      ? 0
+      : Math.round(
+          (Math.max(0, totalExpectedCount - missing.length) / totalExpectedCount) *
+            100
+        );
+
+  let score = baseScore;
+
+  if (forbiddenMatched.length > 0) {
+    score = Math.max(0, score - forbiddenMatched.length * 25);
+  }
+
+  if (missingParamUsage.length > 0) {
+    score = Math.max(0, score - 30);
+  }
+
+  if (exactAccepted) {
+    score = 100;
+  }
+
+  const isCorrect =
+    exactAccepted ||
+    (missing.length === 0 &&
+      forbiddenMatched.length === 0 &&
+      missingParamUsage.length === 0);
+
+  return {
+    isCorrect,
+    score,
+    matched,
+    missing,
+    forbiddenMatched,
+    unexpectedColumns: [],
+    missingParamUsage,
+  };
+}
+=== src/lib/question-types.ts ===
+export type QuestionDifficulty = "easy" | "medium" | "hard";
+
+export type BaseQuestion = {
+  slug: string;
+  title: string;
+  promptText: string;
+  difficulty: QuestionDifficulty;
+};
+
+export type SqlQuestion = BaseQuestion & {
+  track: "sql";
+  expectedIncludes: string[];
+  forbiddenIncludes?: string[];
+  acceptedPatterns?: string[];
+  expectedColumns?: string[];
+};
+
+export type PythonQuestion = BaseQuestion & {
+  track: "python";
+  expectedFunctionName?: string;
+  requiredTokens?: string[];
+  forbiddenTokens?: string[];
+  acceptedPatterns?: string[];
+};
+
+export type TrackQuestion = SqlQuestion | PythonQuestion;
+
+export type TrackCheckResult = {
+  isCorrect: boolean;
+  score: number;
+  matched: string[];
+  missing: string[];
+  forbiddenMatched: string[];
+  unexpectedColumns?: string[];
+  missingParamUsage?: string[];
+};
+=== src/lib/sql-checker.test-manual.ts ===
+import { checkSqlAttempt } from "./sql-checker";
+
+function logCase(name: string, result: unknown) {
+  console.log(`\n=== ${name} ===`);
+  console.dir(result, { depth: null });
+}
+
+const caseA = checkSqlAttempt({
+  userAnswer: "SELECT customer_id FROM orders;",
+  expectedIncludes: ["select", "select", "from orders", "from orders"],
+  forbiddenIncludes: [],
+  acceptedPatterns: [],
+  expectedColumns: [],
+});
+
+logCase("Case A - duplicate expectedIncludes", caseA);
+
+const caseB = checkSqlAttempt({
+  userAnswer: "SELECT * FROM orders;",
+  expectedIncludes: ["select", "from orders"],
+  forbiddenIncludes: ["select *", "SELECT *", " select   * "],
+  acceptedPatterns: [],
+  expectedColumns: [],
+});
+
+logCase("Case B - duplicate forbiddenIncludes", caseB);
+
+const caseC = checkSqlAttempt({
+  userAnswer: "SELECT customer_id, customer_id AS cid, orders.customer_id FROM orders;",
+  expectedIncludes: ["select", "from orders"],
+  forbiddenIncludes: [],
+  acceptedPatterns: [],
+  expectedColumns: ["order_id"],
+});
+
+logCase("Case C - duplicate unexpected columns", caseC);
+=== src/lib/sql-checker.ts ===
+import type { TrackCheckResult } from "@/lib/question-types";
+
+export type SqlCheckResult = TrackCheckResult;
+
+function normalizeSql(input: string) {
+  return input
+    .toLowerCase()
+    .replace(/;/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeDisplayValue(input: string) {
+  return input.trim().replace(/\s+/g, " ");
+}
+
+function dedupeStrings(values: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const value of values) {
+    const displayValue = normalizeDisplayValue(value);
+
+    if (!displayValue) continue;
+
+    const dedupeKey = normalizeSql(displayValue);
+
+    if (seen.has(dedupeKey)) continue;
+
+    seen.add(dedupeKey);
+    result.push(displayValue);
+  }
+
+  return result;
+}
+
+function extractSelectColumns(sql: string): string[] {
+  const match = sql.match(/select (.*?) from/i);
+
+  if (!match) return [];
+
+  return match[1]
+    .split(",")
+    .map((column) => column.trim())
+    .map((column) => column.replace(/.*\./, ""))
+    .map((column) => column.replace(/\s+as\s+.+$/i, "").trim())
+    .filter(Boolean);
+}
+
+type CheckSqlAttemptInput = {
+  userAnswer: string;
+  expectedIncludes: string[];
+  forbiddenIncludes?: string[];
+  acceptedPatterns?: string[];
+  expectedColumns?: string[];
+};
+
+export function checkSqlAttempt({
+  userAnswer,
+  expectedIncludes,
+  forbiddenIncludes = [],
+  acceptedPatterns = [],
+  expectedColumns = [],
+}: CheckSqlAttemptInput): SqlCheckResult {
+  const normalized = normalizeSql(userAnswer);
+
+  const dedupedExpectedIncludes = dedupeStrings(expectedIncludes);
+  const dedupedForbiddenIncludes = dedupeStrings(forbiddenIncludes);
+  const dedupedAcceptedPatterns = dedupeStrings(acceptedPatterns);
+  const dedupedExpectedColumns = dedupeStrings(expectedColumns);
+
+  const normalizedAcceptedPatterns = dedupedAcceptedPatterns.map(normalizeSql);
+
+  const exactAccepted =
+    normalizedAcceptedPatterns.length > 0 &&
+    normalizedAcceptedPatterns.includes(normalized);
+
+  const matched = dedupeStrings(
+    dedupedExpectedIncludes.filter((fragment) =>
+      normalized.includes(normalizeSql(fragment))
+    )
+  );
+
+  const missing = dedupeStrings(
+    dedupedExpectedIncludes.filter(
+      (fragment) => !normalized.includes(normalizeSql(fragment))
+    )
+  );
+
+  const forbiddenMatched = dedupeStrings(
+    dedupedForbiddenIncludes.filter((fragment) =>
+      normalized.includes(normalizeSql(fragment))
+    )
+  );
+
+  const selectedColumns = dedupeStrings(extractSelectColumns(normalized));
+
+  const normalizedExpectedColumns = dedupedExpectedColumns.map((column) =>
+    normalizeSql(column)
+  );
+
+  const unexpectedColumns =
+    normalizedExpectedColumns.length > 0
+      ? dedupeStrings(
+          selectedColumns.filter(
+            (column) =>
+              !normalizedExpectedColumns.includes(normalizeSql(column))
+          )
+        )
+      : [];
+
+  const baseScore =
+    dedupedExpectedIncludes.length === 0
+      ? 0
+      : Math.round((matched.length / dedupedExpectedIncludes.length) * 100);
+
+  let score = baseScore;
+
+  if (forbiddenMatched.length > 0) {
+    score = Math.max(0, score - forbiddenMatched.length * 25);
+  }
+
+  if (unexpectedColumns.length > 0) {
+    score = Math.max(0, score - unexpectedColumns.length * 25);
+  }
+
+  if (exactAccepted) {
+    score = 100;
+  }
+
+  const isCorrect =
+    (exactAccepted || missing.length === 0) &&
+    forbiddenMatched.length === 0 &&
+    unexpectedColumns.length === 0;
+
+  return {
+    isCorrect,
+    score,
+    matched,
+    missing,
+    forbiddenMatched,
+    unexpectedColumns,
+  };
+}
+=== src/lib/supabase/browser.ts ===
+import { createBrowserClient } from "@supabase/ssr";
+
+export function createClient() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
+=== src/lib/supabase/server.ts ===
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+
+export async function createClient() {
+  const cookieStore = await cookies();
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // This can be ignored in Server Components if middleware handles refreshes.
+          }
+        },
+      },
+    }
+  );
+}
+=== src/lib/track-checker.ts ===
+import type {
+  PythonQuestion,
+  TrackCheckResult,
+  TrackQuestion,
+} from "@/lib/question-types";
+import { checkSqlAttempt } from "@/lib/sql-checker";
+import { checkPythonAttempt } from "@/lib/python-checker";
+
+type CheckTrackAttemptInput = {
+  track: string;
+  userAnswer: string;
+  question: TrackQuestion;
+};
+
+export function checkTrackAttempt({
+  track,
+  userAnswer,
+  question,
+}: CheckTrackAttemptInput): TrackCheckResult {
+  if (track === "sql" && question.track === "sql") {
+    return checkSqlAttempt({
+      userAnswer,
+      expectedIncludes: question.expectedIncludes,
+      forbiddenIncludes: question.forbiddenIncludes,
+      acceptedPatterns: question.acceptedPatterns,
+      expectedColumns: question.expectedColumns,
+    });
+  }
+
+  if (track === "python" && question.track === "python") {
+    return checkPythonAttempt({
+      userAnswer,
+      question: question as PythonQuestion,
+    });
+  }
+
+  return {
+    isCorrect: false,
+    score: 0,
+    matched: [],
+    missing: ["Track and question type do not match."],
+    forbiddenMatched: [],
+    unexpectedColumns: [],
+  };
+}
+=== src/middleware.ts ===
+import { NextResponse, type NextRequest } from "next/server";
+import { createServerClient } from "@supabase/ssr";
+
+export async function middleware(request: NextRequest) {
+  let response = NextResponse.next({
+    request,
+  });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          );
+
+          response = NextResponse.next({
+            request,
+          });
+
+          cookiesToSet.forEach(({ name, value }) =>
+            response.cookies.set(name, value)
+          );
+        },
+      },
+    }
+  );
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const isDashboardRoute = request.nextUrl.pathname.startsWith("/dashboard");
+  const isAuthRoute =
+    request.nextUrl.pathname.startsWith("/login") ||
+    request.nextUrl.pathname.startsWith("/signup");
+
+  if (isDashboardRoute && !user) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
+  }
+
+  if (isAuthRoute && user) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard";
+    return NextResponse.redirect(url);
+  }
+
+  return response;
+}
+
+export const config = {
+  matcher: ["/dashboard/:path*", "/login", "/signup"],
+};
