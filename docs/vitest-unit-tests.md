@@ -77,7 +77,7 @@ After a few rounds of testing and debugging with ChatGPT, we iteratively improve
 
 After that, I couldn't find any issues with manual smoke testing, and `eslint` looked good. But I remember wondering if more testing would be a good idea if this thing ever became an actual product. When I decided to just use it as a portfolio project, it didn't seem like I needed to worry about further testing. 
 
-But Claude Code (Anthropic's agentic CLI tool) had other ideas after looking over my code. Linting checks your code's grammar and style, but unit testing is needed to ensure that your code actually works. That's where Vitest came in.
+But Claude Code had other ideas after looking over my code. Linting checks your code's grammar and style, but unit testing is needed to ensure that your code actually works. That's where Vitest came in.
 
 ## Why test a portfolio project?
 
