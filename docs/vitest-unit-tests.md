@@ -1,6 +1,6 @@
 # How I Added Unit Tests to a Next.js Project Using Vitest (and Why It Matters for Portfolio Projects)
 
-I recently built a SQL and Python interview prep app using Next.js, TypeScript, Supabase, and Vercel, with ChatGPT for code assist. The core of the app is a custom SQL answer checker — a function that evaluates whether a user's SQL query contains the right keywords, avoids forbidden patterns, and selects the right columns.
+I recently built a SQL and Python interview prep app using Next.js, TypeScript, Supabase, and Vercel, with ChatGPT and Claude Code for code assist. The core of the app is a custom SQL answer checker — a function that evaluates whether a user's SQL query contains the right keywords, avoids forbidden patterns, and selects the right columns.
 
 The `sql-warmup-questions.ts` file contains the `promptText` and `expectedIncludes` for each question: 
 
