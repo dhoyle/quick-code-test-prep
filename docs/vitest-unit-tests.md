@@ -1,6 +1,6 @@
 # How I Added Unit Tests to a Next.js Project Using Vitest (and Why It Matters for Portfolio Projects)
 
-I recently built a SQL and Python interview prep app using Next.js, TypeScript, Supabase, and Vercel, with ChatGBT for code assist. The core of the app is a custom SQL answer checker — a function that evaluates whether a user's SQL query contains the right keywords, avoids forbidden patterns, and selects the right columns.
+I recently built a SQL and Python interview prep app using Next.js, TypeScript, Supabase, and Vercel, with ChatGPT for code assist. The core of the app is a custom SQL answer checker — a function that evaluates whether a user's SQL query contains the right keywords, avoids forbidden patterns, and selects the right columns.
 
 The SQL `warmup-questions.ts` file contained the `promptText` and `expectedIncludes` for each question: 
 
@@ -29,7 +29,10 @@ export const SQL_WARMUP_QUESTIONS: WarmupQuestion[] = [
   },
 ```
 
-The `sql-checker.ts` file checked the answer for required fragments, generates a score, and tells yo what's missing: 
+The `sql-checker.ts` file checked the answer for required fragments, generates a score, and tells you what's missing: 
+
+[!NOTE]
+Note: This shows the initial version of the checker. We'll see the fuller ruleset it evolved into shortly.
 
 ```typescript
 export type SqlCheckResult = {
@@ -70,7 +73,7 @@ export function checkSqlAttempt(
   };
 ```
 
-After a few rounds of testing and debugging with ChatGBT, we iteratively improved the checker with a slightly smarter rule set: required fragments, forbidden fragments, exact-match patterns, and unexpected columns. We also added array deduplication to avoid non-unique key errors.  
+After a few rounds of testing and debugging with ChatGPT, we iteratively improved the checker with a slightly smarter rule set: required fragments, forbidden fragments, exact-match patterns, and unexpected columns. We also added array deduplication to avoid non-unique key errors.  
 
 After that, I couldn't find any issues with manual smoke testing, and `eslint` looked good. But I remember wondering if more testing would be a good idea if this thing every became an actual product. When I decided to just use it as a portfolio project, it didn't seem like I needed to worry about further testing. 
 
