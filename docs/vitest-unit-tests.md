@@ -182,6 +182,12 @@ That distinction matters. AI accelerates execution. Humans still define the rule
 
 ## Run it yourself
 
+[Quick Code Test Prep](https://quick-code-test-prep.vercel.app/)
+
+[Live Demo](https://quick-code-test-prep.vercel.app/dashboard)
+
+[GitHub repo](https://github.com/dhoyle/quick-code-test-prep)
+
 If you want to try it locally:
 
 ```bash
