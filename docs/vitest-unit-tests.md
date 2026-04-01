@@ -31,8 +31,8 @@ export const SQL_WARMUP_QUESTIONS: WarmupQuestion[] = [
 
 The `sql-checker.ts` file checked the answer for required fragments, generates a score, and tells you what's missing: 
 
-[!NOTE]
-Note: This shows the initial version of the checker. We'll see the fuller ruleset it evolved into shortly.
+> [!NOTE]
+> This shows the initial version of the checker. We'll see the fuller ruleset it evolved into shortly.
 
 ```typescript
 export type SqlCheckResult = {
