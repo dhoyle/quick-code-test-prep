@@ -2,7 +2,7 @@
 
 I recently built a SQL and Python interview prep app using Next.js, TypeScript, Supabase, and Vercel, with ChatGPT for code assist. The core of the app is a custom SQL answer checker — a function that evaluates whether a user's SQL query contains the right keywords, avoids forbidden patterns, and selects the right columns.
 
-The SQL `warmup-questions.ts` file contained the `promptText` and `expectedIncludes` for each question: 
+The SQL `warmup-questions.ts` file contains the `promptText` and `expectedIncludes` for each question: 
 
 ```typescript
 export type WarmupQuestion = {
@@ -29,7 +29,7 @@ export const SQL_WARMUP_QUESTIONS: WarmupQuestion[] = [
   },
 ```
 
-The `sql-checker.ts` file checked the answer for required fragments, generates a score, and tells you what's missing: 
+The `sql-checker.ts` file checks the answer for required fragments, generates a score, and tells you what's missing: 
 
 > [!NOTE]
 > This shows the initial version of the checker. We'll see the fuller ruleset it evolved into shortly.
@@ -75,7 +75,7 @@ export function checkSqlAttempt(
 
 After a few rounds of testing and debugging with ChatGPT, we iteratively improved the checker with a slightly smarter rule set: required fragments, forbidden fragments, exact-match patterns, and unexpected columns. We also added array deduplication to avoid non-unique key errors.  
 
-After that, I couldn't find any issues with manual smoke testing, and `eslint` looked good. But I remember wondering if more testing would be a good idea if this thing every became an actual product. When I decided to just use it as a portfolio project, it didn't seem like I needed to worry about further testing. 
+After that, I couldn't find any issues with manual smoke testing, and `eslint` looked good. But I remember wondering if more testing would be a good idea if this thing ever became an actual product. When I decided to just use it as a portfolio project, it didn't seem like I needed to worry about further testing. 
 
 But Claude Code (Anthropic's agentic CLI tool) had other ideas after looking over my code. Linting checks your code's grammar and style, but unit testing is needed to ensure that your code actually works. That's where Vitest came in.
 
@@ -154,13 +154,13 @@ describe("basic correctness", () => {
 
 This code checks:
 
-1. Fragment Matching: It confirms that if the user's SQL ("`SELECT name FROM users`") contains all the required strings defined in `expectedIncludes`, the result is marked as correct (`isCorrect: true`) with a perfect score of 100.
+1. Fragment Matching: It confirms that if the user's SQL (`SELECT name FROM users`) contains all the required strings defined in `expectedIncludes`, the result is marked as correct (`isCorrect: true`) with a perfect score of 100.
 
 2. Case Insensitivity: It verifies that the checker doesn't care about CAPITALIZATION. For example, if the user types in lowercase (`select`) but the requirement is uppercase (`SELECT`), it should still pass.
 
 ## What 26 tests actually cover
 
-The tests are organized into seven describe blocks:
+The tests are organized into seven `describe` blocks:
 
 - **Basic correctness** — full match, missing fragments, case-insensitivity, semicolons, extra whitespace
 - **Score calculation** — 100%, partial credit, 0%, empty rules
@@ -170,7 +170,7 @@ The tests are organized into seven describe blocks:
 - **Deduplication** — ensuring duplicate rules count as one
 - **Matched/missing arrays** — verifying the feedback arrays are populated correctly
 
-One of the more interesting edge cases: if a user writes `SELECT customer_id, customer_id AS cid, orders.customer_id FROM orders`, all three references resolve to the same column after normalization. The test verifies that only one unexpected column is reported, not three.
+One of the more interesting edge cases: if a user writes `SELECT customer_id`, `customer_id AS cid`, `orders.customer_id FROM orders`, all three references resolve to the same column after normalization. The test verifies that only one unexpected column is reported, not three.
 
 ## Where Claude Code helped — and where I still had to think
 
@@ -182,11 +182,11 @@ That distinction matters. AI accelerates execution. Humans still define the rule
 
 ## Run it yourself
 
-[Quick Code Test Prep](https://quick-code-test-prep.vercel.app/)
+- [Quick Code Test Prep](https://quick-code-test-prep.vercel.app/)
 
-[Live Demo](https://quick-code-test-prep.vercel.app/dashboard)
+- [Live Demo](https://quick-code-test-prep.vercel.app/dashboard)
 
-[GitHub repo](https://github.com/dhoyle/quick-code-test-prep)
+- [GitHub repo](https://github.com/dhoyle/quick-code-test-prep)
 
 If you want to try it locally:
 
