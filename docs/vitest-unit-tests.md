@@ -1,12 +1,80 @@
-Let me pull up your actual test file first so the draft uses your real code examples rather than made-up ones.Got all 26 tests. Now I have everything I need to write a draft that uses your real code. Here it is:
-
----
-
 # How I Added Unit Tests to a Next.js Project Using Vitest (and Why It Matters for Portfolio Projects)
 
-I recently built a SQL and Python interview prep app using Next.js, TypeScript, Supabase, and Vercel. The core of the app is a custom SQL answer checker — a function that evaluates whether a user's SQL query contains the right keywords, avoids forbidden patterns, and selects the right columns.
+I recently built a SQL and Python interview prep app using Next.js, TypeScript, Supabase, and Vercel, with ChatGBT for code assist. The core of the app is a custom SQL answer checker — a function that evaluates whether a user's SQL query contains the right keywords, avoids forbidden patterns, and selects the right columns.
 
-It worked, and I smoke tested it manually. But I didn't have any unit tests, so I couldn't *prove* it worked. That's where Vitest came in.
+The SQL `warmup-questions.ts` file contained the `promptText` and `expectedIncludes` for each question: 
+
+```typescript
+export type WarmupQuestion = {
+  slug: string;
+  title: string;
+  promptText: string;
+  expectedIncludes: string[];
+};
+
+export const SQL_WARMUP_QUESTIONS: WarmupQuestion[] = [
+  {
+    slug: "basic-select",
+    title: "Basic SELECT",
+    promptText:
+      "Write a SQL query that returns the name and age columns from the users table.",
+    expectedIncludes: ["select", "name", "age", "from users"],
+  },
+  {
+    slug: "where-filter",
+    title: "WHERE Filter",
+    promptText:
+      "Write a SQL query that returns all users whose age is greater than or equal to 18.",
+    expectedIncludes: ["select", "from users", "where", "age", ">=", "18"],
+  },
+```
+
+The `sql-checker.ts` file checked the answer for required fragments, generates a score, and tells yo what's missing: 
+
+```typescript
+export type SqlCheckResult = {
+  isCorrect: boolean;
+  score: number;
+  matched: string[];
+  missing: string[];
+};
+
+function normalizeSql(input: string) {
+  return input.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+export function checkSqlAttempt(
+  userAnswer: string,
+  expectedIncludes: string[]
+): SqlCheckResult {
+  const normalized = normalizeSql(userAnswer);
+
+  const matched = expectedIncludes.filter((fragment) =>
+    normalized.includes(normalizeSql(fragment))
+  );
+
+  const missing = expectedIncludes.filter(
+    (fragment) => !normalized.includes(normalizeSql(fragment))
+  );
+
+  const score =
+    expectedIncludes.length === 0
+      ? 0
+      : Math.round((matched.length / expectedIncludes.length) * 100);
+
+  return {
+    isCorrect: missing.length === 0,
+    score,
+    matched,
+    missing,
+  };
+```
+
+After a few rounds of testing and debugging with ChatGBT, we iteratively improved the checker with a slightly smarter rule set: required fragments, forbidden fragments, exact-match patterns, and unexpected columns. We also added array deduplication to avoid non-unique key errors.  
+
+After that, I couldn't find any issues with manual smoke testing, and `eslint` looked good. But I remember wondering if more testing would be a good idea if this thing every became an actual product. When I decided to just use it as a portfolio project, it didn't seem like I needed to worry about further testing. 
+
+But Claude Code (Anthropic's agentic CLI tool) had other ideas after looking over my code. Linting checks your code's grammar and style, but unit testing is needed to ensure that your code actually works. That's where Vitest came in.
 
 ## Why test a portfolio project?
 
@@ -22,7 +90,7 @@ The most common testing framework you'll hear about is Jest. Vitest is the moder
 
 ## Setting it up
 
-I used Claude Code (Anthropic's agentic CLI tool) to scaffold the test setup. It created three things:
+I used Claude Code to scaffold the test setup. It created three things:
 
 A `vitest.config.ts` file to handle path aliases:
 
@@ -81,7 +149,11 @@ describe("basic correctness", () => {
 });
 ```
 
-Clean, readable, and self-documenting. Anyone reading this immediately understands what the checker does and what "correct" means.
+This code checks:
+
+1. Fragment Matching: It confirms that if the user's SQL ("`SELECT name FROM users`") contains all the required strings defined in `expectedIncludes`, the result is marked as correct (`isCorrect: true`) with a perfect score of 100.
+
+2. Case Insensitivity: It verifies that the checker doesn't care about CAPITALIZATION. For example, if the user types in lowercase (`select`) but the requirement is uppercase (`SELECT`), it should still pass.
 
 ## What 26 tests actually cover
 
