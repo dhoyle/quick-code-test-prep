@@ -102,7 +102,7 @@ Rather than continue, I chose to:
 ### 1. Clone and install npm (Node Package Manager)
 
 ```bash
-git clone https://github.com/your-username/quick-code-test-prep.git
+git clone https://github.com/dhoyle/quick-code-test-prep.git
 cd quick-code-test-prep
 npm install
 ```
